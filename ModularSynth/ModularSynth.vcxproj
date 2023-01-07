@@ -166,6 +166,7 @@
     <ClCompile Include="Animator.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Button.cpp" />
+    <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="Control.cpp" />
     <ClCompile Include="EventSystem.cpp" />
     <ClCompile Include="glad\glad.c" />
@@ -174,6 +175,8 @@
     <ClCompile Include="Knob.cpp" />
     <ClCompile Include="Label.cpp" />
     <ClCompile Include="nanovg\nanovg.c" />
+    <ClCompile Include="Panel.cpp" />
+    <ClCompile Include="RadioSelector.cpp" />
     <ClCompile Include="Slider.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="main.cpp" />
@@ -182,6 +185,7 @@
     <ClInclude Include="Animator.h" />
     <ClInclude Include="Application.h" />
     <ClInclude Include="Button.h" />
+    <ClInclude Include="CheckBox.h" />
     <ClInclude Include="Control.h" />
     <ClInclude Include="EventSystem.h" />
     <ClInclude Include="glad\glad.h" />
@@ -196,6 +200,8 @@
     <ClInclude Include="nanovg\nanovg_gl_utils.h" />
     <ClInclude Include="nanovg\stb_image.h" />
     <ClInclude Include="nanovg\stb_truetype.h" />
+    <ClInclude Include="Panel.h" />
+    <ClInclude Include="RadioSelector.h" />
     <ClInclude Include="Slider.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

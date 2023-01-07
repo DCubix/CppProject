@@ -13,6 +13,8 @@ void GUISystem::addControl(Control* control) {
 
 void GUISystem::renderAll(NVGcontext* ctx, float deltaTime) {
 	for (auto&& ctrl : m_controls) {
+		if (ctrl->parent()) continue; // Parent handles drawing of children.
+
 		nvgSave(ctx);
 
 		// make local coordinates

@@ -1,5 +1,7 @@
 #include "Control.h"
 
+#include <iostream>
+
 void Control::onDraw(NVGcontext* ctx, float deltaTime) {
 	/*Rect b = bounds;
 	nvgBeginPath(ctx);

@@ -81,6 +81,15 @@
     <ClCompile Include="Knob.cpp">
       <Filter>Source Files\gui\controls</Filter>
     </ClCompile>
+    <ClCompile Include="CheckBox.cpp">
+      <Filter>Source Files\gui\controls</Filter>
+    </ClCompile>
+    <ClCompile Include="RadioSelector.cpp">
+      <Filter>Source Files\gui\controls</Filter>
+    </ClCompile>
+    <ClCompile Include="Panel.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -139,6 +148,15 @@
     </ClInclude>
     <ClInclude Include="Knob.h">
       <Filter>Header Files\gui\controls</Filter>
+    </ClInclude>
+    <ClInclude Include="CheckBox.h">
+      <Filter>Header Files\gui\controls</Filter>
+    </ClInclude>
+    <ClInclude Include="RadioSelector.h">
+      <Filter>Header Files\gui\controls</Filter>
+    </ClInclude>
+    <ClInclude Include="Panel.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -6,6 +6,9 @@
 #include "Button.h"
 #include "Slider.h"
 #include "Knob.h"
+#include "CheckBox.h"
+#include "RadioSelector.h"
+#include "Panel.h"
 
 #include "Animator.h"
 
@@ -63,9 +66,6 @@ public:
 		gui = new GUISystem();
 		gui->attachToApplication(app);
 
-		ControlTest* ctrl = new ControlTest();
-		gui->addControl(ctrl);
-
 		Label* lbl = new Label();
 		gui->addControl(lbl);
 
@@ -75,32 +75,69 @@ public:
 		Slider* sld = new Slider();
 		gui->addControl(sld);
 
-		Knob* knb = new Knob();
-		gui->addControl(knb);
+		CheckBox* ckb = new CheckBox();
+		gui->addControl(ckb);
+
+		RadioSelector* rse = new RadioSelector();
+		gui->addControl(rse);
+
+		Panel* pnl = new Panel();
+		gui->addControl(pnl);
+
+		pnl->setLayout(new ColumnLayout());
+
+		pnl->addChild(lbl);
+		pnl->addChild(btn);
+		pnl->addChild(sld);
+		pnl->addChild(rse);
+		pnl->addChild(ckb);
+
+		Panel* pnl2 = new Panel();
+		gui->addControl(pnl2);
+		pnl2->setLayout(new RowLayout(3));
+		pnl2->drawBackground(false);
+		pnl2->bounds = { 0, 0, 0, 64 };
+		for (int i = 0; i < 3; i++) {
+			Knob* knb = new Knob();
+			gui->addControl(knb);
+			pnl2->addChild(knb);
+
+			knb->bounds = { 0, 0, 48, 48 };
+			knb->step = 0.01f;
+			knb->value = bgColor[i];
+			knb->onChange = [=](float v) {
+				bgColor[i] = v;
+			};
+		}
+
+		pnl->addChild(pnl2);
+
+		pnl->bounds = { 12, 12, 250, int(app.window().size().second - 24) };
 
 		lbl->text = "Hello World! Testing stuff...";
-		lbl->bounds = { 50, 150, 200, 40 };
+		lbl->bounds = { 0, 0, 200, 40 };
+		lbl->alignment = HorizontalAlignment::center;
 
 		btn->text = "Basic Button";
-		btn->bounds = { 250, 150, 140, 40 };
+		btn->bounds = { 0, 0, 140, 40 };
 
-		sld->bounds = { 250, 200, 140, 40 };
+		sld->bounds = { 0, 50, 140, 40 };
 		sld->step = 0.01f;
 		sld->valueFormat = "{:.2f} sec.";
 
-		knb->bounds = { 250, 250, 72, 72 };
-		knb->step = 0.01f;
-		knb->valueFormat = "{:.1f}%";
-		knb->max = 100.0f;
-		knb->step = 0.5f;
+		ckb->text = "Check It Out";
+		ckb->bounds = { 0, 0, 120, 26 };
 
-		ctrl->bounds = { 50, 50, 120, 90 };
+		rse->addOption(1, "Option 1");
+		rse->addOption(2, "Option 2");
+		rse->addOption(3, "Option 3");
+		rse->bounds = { 0, 0, 300, 25 };
 	}
 
 	void onUpdate(Application& app, float dt) {
 		auto [width, height] = app.window().size();
 
-		glClearColor(0.1f, 0.2f, 0.4f, 1.0f);
+		glClearColor(bgColor[0], bgColor[1], bgColor[2], 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		nvgBeginFrame(ctx, width, height, 1.0f);
@@ -115,7 +152,7 @@ public:
 
 	NVGcontext* ctx;
 	GUISystem* gui;
-
+	float bgColor[3] = { 0.1f, 0.2f, 0.4f };
 };
 
 int main(int argc, char** argv) {

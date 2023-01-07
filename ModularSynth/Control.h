@@ -16,6 +16,10 @@ struct Rect {
 	void inflate(int amount = 1);
 };
 
+struct Dimension {
+	int width{ 100 }, height{ 100 };
+};
+
 class Control : public MouseButtonListener,
 				public MouseMotionListener,
 				public KeyboardListener

@@ -25,7 +25,7 @@ void Button::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgFillColor(ctx, nvgRGBf(clickFgValue, clickFgValue, clickFgValue));
 	nvgTextAlign(ctx, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 	nvgFontSize(ctx, 16.0f);
-	nvgTextBox(ctx, 0, b.height / 2, b.width, text.c_str(), nullptr);
+	nvgTextBox(ctx, 0, b.height / 2 + 1.5f, b.width, text.c_str(), nullptr);
 }
 
 void Button::onMouseDown(int button, int x, int y) {
