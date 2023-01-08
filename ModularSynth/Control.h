@@ -3,6 +3,8 @@
 #include "EventSystem.h"
 #include "nanovg/nanovg.h"
 
+#include <array>
+
 enum class HorizontalAlignment {
 	left = 0,
 	center,
@@ -18,6 +20,12 @@ struct Rect {
 
 struct Dimension {
 	int width{ 100 }, height{ 100 };
+};
+
+struct Color {
+	float r, g, b, a;
+
+	float luminance() const { return 0.2126f * r + 0.7152f * g + 0.0722f * b; };
 };
 
 class Control : public MouseButtonListener,

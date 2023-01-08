@@ -9,8 +9,11 @@
 #include "CheckBox.h"
 #include "RadioSelector.h"
 #include "Panel.h"
+#include "NodeEditor.h"
 
 #include "Animator.h"
+
+#include "Audio.h"
 
 #include "nanovg/nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
@@ -112,7 +115,25 @@ public:
 
 		pnl->addChild(pnl2);
 
-		pnl->bounds = { 12, 12, 250, int(app.window().size().second - 24) };
+		NodeEditor* ned = new NodeEditor();
+		ned->bounds = { 270, 12, int(app.window().size().first) - 282, int(app.window().size().second) - 24 };
+		gui->addControl(ned);
+
+		/* NODE TEST */
+		Node* nd = ned->createNode<Node>();
+		nd->addInput("A", NodeValueType::float1);
+		nd->addInput("B", NodeValueType::float1);
+		nd->addOutput("Out", NodeValueType::float1);
+
+		Node* nd1 = ned->createNode<Node>();
+		nd1->position.x = 100;
+		nd1->addInput("A", NodeValueType::float1);
+		nd1->addInput("B", NodeValueType::float1);
+		nd1->addOutput("Out", NodeValueType::float1);
+
+		/* --------- */
+
+		pnl->bounds = { 12, 12, 250, int(app.window().size().second) - 24 };
 
 		lbl->text = "Hello World! Testing stuff...";
 		lbl->bounds = { 0, 0, 200, 40 };
