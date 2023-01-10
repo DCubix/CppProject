@@ -1,4 +1,6 @@
 #pragma once
+#ifndef NODEEDITOR_H
+#define NODEEDITOR_H
 
 #define NOMINMAX
 
@@ -10,12 +12,7 @@
 #include <memory>
 #include <algorithm>
 
-enum NodeValueType {
-	float1 = 1,
-	float2,
-	float3,
-	float4
-};
+#include "NodeGraph.h"
 
 enum class NodeEditorState {
 	idling = 0,
@@ -25,21 +22,18 @@ enum class NodeEditorState {
 	connecting
 };
 
-struct NodeValue {
-	std::array<float, 4> value{ 0.0f };
-	NodeValueType type;
-};
-
-class Node {
+class VisualNode {
 	friend class NodeEditor;
 public:
 	void onDraw(NVGcontext* ctx, float deltaTime);
-	
+
 	virtual size_t addInput(const std::string& name, NodeValueType type);
 	virtual size_t addOutput(const std::string& name, NodeValueType type);
 
 	virtual std::string name() const { return "Node"; };
 	virtual Color color() const { return { .r = 0.15f, .g = 0.76f, .b = 0.62f, .a = 1.0f }; };
+
+	virtual NodeValue solve() { return NodeValue(); }
 
 	Rect getOutputRect(size_t index);
 	Rect getInputRect(size_t index);
@@ -57,18 +51,18 @@ protected:
 	size_t m_id{ 0 };
 	Dimension m_size{ 0, 0 };
 	std::vector<Rect> m_outputRects, m_inputRects;
+	std::vector<NodeValue> m_inputs, m_outputs;
 
 private:
-	std::vector<NodeValue> m_inputs, m_outputs;
 	std::vector<std::string> m_inputNames, m_outputNames;
 };
 
 template <typename T>
-concept NodeObject = std::is_base_of<Node, T>::value;
+concept VisualNodeObject = std::is_base_of<VisualNode, T>::value;
 
-struct Connection {
-	Node* source;
-	Node* destination;
+struct VisualConnection {
+	VisualNode* source;
+	VisualNode* destination;
 	size_t destinationInput;
 	size_t sourceOutput;
 };
@@ -82,16 +76,16 @@ public:
 	void onMouseMove(int x, int y, int dx, int dy) override;
 	void onMouseLeave() override;
 
-	template <NodeObject T>
+	template <VisualNodeObject T>
 	T* createNode() {
 		T* instance = new T();
 		instance->m_id = g_NodeID++;
-		m_nodes.push_back(std::unique_ptr<Node>(instance));
+		m_nodes.push_back(std::unique_ptr<VisualNode>(instance));
 		return m_nodes.back().get();
 	}
 
-	Node* get(size_t id) {
-		auto pos = std::find_if(m_nodes.begin(), m_nodes.end(), [id](const std::unique_ptr<Node>& ob) {
+	VisualNode* get(size_t id) {
+		auto pos = std::find_if(m_nodes.begin(), m_nodes.end(), [id](const std::unique_ptr<VisualNode>& ob) {
 			return ob->id() == id;
 		});
 		if (pos != m_nodes.end()) {
@@ -100,11 +94,11 @@ public:
 		return nullptr;
 	}
 
-	void connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
+	void connect(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput);
 
 private:
-	std::vector<std::unique_ptr<Node>> m_nodes;
-	std::vector<Connection> m_connections;
+	std::vector<std::unique_ptr<VisualNode>> m_nodes;
+	std::vector<VisualConnection> m_connections;
 
 	size_t m_selectedNode{ 0 };
 	int m_selectedOutput{ -1 };
@@ -114,3 +108,4 @@ private:
 	static size_t g_NodeID;
 };
 
+#endif // NODEEDITOR_H

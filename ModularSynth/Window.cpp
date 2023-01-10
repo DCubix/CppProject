@@ -1,6 +1,8 @@
 #include "Window.h"
 
 #include <windowsx.h>
+#include <cassert>
+
 #include "glad/glad_wgl.h"
 
 static LRESULT CALLBACK win32WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
@@ -268,6 +270,19 @@ void Window::initializeGLEXT() {
 	DestroyWindow(fakeHandle);
 }
 
+#ifdef _DEBUG
+static void APIENTRY debugCallback(
+	GLenum source, GLenum type, GLuint id, GLenum severity,
+	GLsizei length, const GLchar* message, const void* user)
+{
+	OutputDebugStringA(message);
+	OutputDebugStringA("\n");
+	/*if ((severity == GL_DEBUG_SEVERITY_HIGH || severity == GL_DEBUG_SEVERITY_MEDIUM) && IsDebuggerPresent()) {
+		assert(!"OpenGL error - check the callstack in debugger");
+	}*/
+}
+#endif
+
 HGLRC Window::initializeGL() {
 	int pixel_format_attribs[] = {
 		WGL_DRAW_TO_WINDOW_ARB,         GL_TRUE,
@@ -292,12 +307,20 @@ HGLRC Window::initializeGL() {
 	int gl46Attribs[] = {
 		WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
 		WGL_CONTEXT_MINOR_VERSION_ARB, 6,
+#ifdef _DEBUG
+		WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
+#endif
 		0,
 	};
 	HGLRC ctx = wglCreateContextAttribsARB(m_dc, 0, gl46Attribs);
 	wglMakeCurrent(m_dc, ctx);
 
 	gladLoadGL();
+
+#ifdef _DEBUG
+	glDebugMessageCallback(&debugCallback, nullptr);
+	glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+#endif
 
 	return ctx;
 }

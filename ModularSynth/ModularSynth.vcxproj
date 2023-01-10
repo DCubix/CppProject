@@ -172,15 +172,20 @@
     <ClCompile Include="EventSystem.cpp" />
     <ClCompile Include="glad\glad.c" />
     <ClCompile Include="glad\glad_wgl.c" />
+    <ClCompile Include="GraphicsNode.cpp" />
     <ClCompile Include="GUISystem.cpp" />
     <ClCompile Include="Knob.cpp" />
     <ClCompile Include="Label.cpp" />
     <ClCompile Include="miniaudio.c" />
     <ClCompile Include="nanovg\nanovg.c" />
     <ClCompile Include="NodeEditor.cpp" />
+    <ClCompile Include="NodeGraph.cpp" />
     <ClCompile Include="Panel.cpp" />
     <ClCompile Include="RadioSelector.cpp" />
+    <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Slider.cpp" />
+    <ClCompile Include="Texture.cpp" />
+    <ClCompile Include="TextureNodeGraph.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -190,6 +195,7 @@
     <ClInclude Include="Audio.h" />
     <ClInclude Include="Button.h" />
     <ClInclude Include="CheckBox.h" />
+    <ClInclude Include="GraphicsNode.h" />
     <ClInclude Include="Control.h" />
     <ClInclude Include="EventSystem.h" />
     <ClInclude Include="glad\glad.h" />
@@ -206,9 +212,13 @@
     <ClInclude Include="nanovg\stb_image.h" />
     <ClInclude Include="nanovg\stb_truetype.h" />
     <ClInclude Include="NodeEditor.h" />
+    <ClInclude Include="NodeGraph.h" />
     <ClInclude Include="Panel.h" />
     <ClInclude Include="RadioSelector.h" />
+    <ClInclude Include="Shader.h" />
     <ClInclude Include="Slider.h" />
+    <ClInclude Include="Texture.h" />
+    <ClInclude Include="TextureNodeGraph.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

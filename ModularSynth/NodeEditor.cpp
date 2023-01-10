@@ -8,6 +8,30 @@ constexpr int gapBetweenSides = 32;
 constexpr int gapBetweenInOuts = 4;
 constexpr int padding = 7;
 
+static Point lerpPoint(Point a, Point b, float t) {
+	return {
+		.x = int((1.0f - t) * a.x + b.x * t),
+		.y = int((1.0f - t) * a.y + b.y * t)
+	};
+}
+
+static void beginConnection(NVGcontext* ctx, Point a, Point b) {
+	const Point ia{ a.x + 20, a.y };
+	const Point ib{ b.x - 20, b.y };
+	const Point mid{ (a.x + b.x) / 2, (a.y + b.y) / 2 };
+
+	nvgBeginPath(ctx);
+	if (ia.x > ib.x) {
+		nvgMoveTo(ctx, a.x, a.y);
+		nvgBezierTo(ctx, ia.x, ia.y, ia.x, mid.y, mid.x, mid.y);
+		nvgBezierTo(ctx, ib.x, mid.y, ib.x, ib.y, b.x, b.y);
+	}
+	else {
+		nvgMoveTo(ctx, a.x, a.y);
+		nvgBezierTo(ctx, mid.x, a.y, mid.x, b.y, b.x, b.y);
+	}
+}
+
 void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 	Rect b = bounds;
 
@@ -23,28 +47,44 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 		node->onDraw(ctx, deltaTime);
 	}
 
+	nvgSave(ctx);
+	nvgStrokeWidth(ctx, 3.0f);
+	nvgStrokeColor(ctx, nvgRGBf(1.0f, 1.0f, 1.0f));
+
 	for (auto&& conn : m_connections) {
 		Rect outRect = conn.source->getOutputRect(conn.sourceOutput);
 		Rect inRect = conn.destination->getInputRect(conn.destinationInput);
 
-		nvgBeginPath(ctx);
-		nvgMoveTo(ctx, outRect.x + 5.0f, outRect.y + 5.0f);
-		nvgLineTo(ctx, inRect.x + 5.0f, inRect.y + 5.0f);
-		nvgLineCap(ctx, NVG_ROUND);
-		nvgStrokeWidth(ctx, 8.0f);
-		nvgStrokeColor(ctx, nvgRGBf(1.0f, 1.0f, 0.0f));
+		beginConnection(ctx, { outRect.x + 5, outRect.y + 5 }, { inRect.x + 5, inRect.y + 5 });
 		nvgStroke(ctx);
+
+		nvgBeginPath(ctx);
+		nvgCircle(ctx, outRect.x + 5, outRect.y + 5, 4.5f);
+		nvgCircle(ctx, inRect.x + 5, inRect.y + 5, 4.5f);
+		nvgFillColor(ctx, nvgRGBf(1.0f, 1.0f, 1.0f));
+		nvgFill(ctx);
 	}
+	nvgRestore(ctx);
 
 	if (m_state == NodeEditorState::draggingConnection) {
-		Rect outRect = get(m_selectedNode)->getOutputRect(m_selectedOutput);
-		nvgBeginPath(ctx);
-		nvgMoveTo(ctx, outRect.x + 5.0f, outRect.y + 5.0f);
-		nvgLineTo(ctx, m_mousePos.x, m_mousePos.y);
-		nvgLineCap(ctx, NVG_ROUND);
-		nvgStrokeWidth(ctx, 8.0f);
-		nvgStrokeColor(ctx, nvgRGBf(1.0f, 1.0f, 0.0f));
-		nvgStroke(ctx);
+		VisualNode* node = get(m_selectedNode);
+		if (node) {
+			Rect outRect = node->getOutputRect(m_selectedOutput);
+
+			nvgSave(ctx);
+			beginConnection(ctx, { outRect.x + 5, outRect.y + 5 }, m_mousePos);
+			nvgStrokeWidth(ctx, 3.0f);
+			nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.5f));
+			nvgStroke(ctx);
+
+			nvgBeginPath(ctx);
+			nvgCircle(ctx, outRect.x + 5, outRect.y + 5, 4.5f);
+			nvgCircle(ctx, m_mousePos.x, m_mousePos.y, 4.5f);
+			nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.5f));
+			nvgFill(ctx);
+
+			nvgRestore(ctx);
+		}
 	}
 
 	nvgRestore(ctx);
@@ -93,8 +133,10 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 				Rect outRect = node->getInputRect(i);
 				outRect.inflate(2);
 				if (outRect.hasPoint({ x, y })) {
-					Node* source = get(m_selectedNode);
-					connect(source, m_selectedOutput, node.get(), i);
+					VisualNode* source = get(m_selectedNode);
+					if (source != node.get()) { // Don't allow self-connection
+						connect(source, m_selectedOutput, node.get(), i);
+					}
 					break;
 				}
 			}
@@ -108,7 +150,7 @@ void NodeEditor::onMouseMove(int x, int y, int dx, int dy) {
 	m_mousePos.y = y;
 
 	if (m_state == NodeEditorState::draggingNode) {
-		Node* node = get(m_selectedNode);
+		VisualNode* node = get(m_selectedNode);
 		if (!node) return;
 
 		node->position.x += dx;
@@ -120,15 +162,15 @@ void NodeEditor::onMouseLeave() {
 	m_state = NodeEditorState::idling;
 }
 
-Rect Node::getOutputRect(size_t index) {
+Rect VisualNode::getOutputRect(size_t index) {
 	return m_outputRects[index];
 }
 
-Rect Node::getInputRect(size_t index) {
+Rect VisualNode::getInputRect(size_t index) {
 	return m_inputRects[index];
 }
 
-void Node::onDraw(NVGcontext* ctx, float deltaTime) {
+void VisualNode::onDraw(NVGcontext* ctx, float deltaTime) {
 	Dimension sz = computeSize(ctx);
 	Rect b = { 0, 0, sz.width, sz.height };
 	Color col = color();
@@ -231,19 +273,19 @@ void Node::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgRestore(ctx);
 }
 
-size_t Node::addInput(const std::string& name, NodeValueType type) {
+size_t VisualNode::addInput(const std::string& name, NodeValueType type) {
 	m_inputs.push_back({ .type = type });
 	m_inputNames.push_back(name);
 	return m_inputs.size() - 1;
 }
 
-size_t Node::addOutput(const std::string& name, NodeValueType type) {
+size_t VisualNode::addOutput(const std::string& name, NodeValueType type) {
 	m_outputs.push_back({ .type = type });
 	m_outputNames.push_back(name);
 	return m_outputs.size() - 1;
 }
 
-Dimension Node::computeSize(NVGcontext* ctx) {
+Dimension VisualNode::computeSize(NVGcontext* ctx) {
 	int width = padding * 2;
 	int height = padding * 2;
 
@@ -262,7 +304,7 @@ Dimension Node::computeSize(NVGcontext* ctx) {
 	// inputs text size (get the max)
 	nvgFontSize(ctx, bodyTextFontSize);
 	nvgFontFace(ctx, "default-bold");
-	
+
 	float maxInputWidth = 0.0f;
 	float inputsHeight = 0.0f;
 
@@ -299,8 +341,8 @@ Dimension Node::computeSize(NVGcontext* ctx) {
 	return m_size;
 }
 
-void NodeEditor::connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput) {
-	Connection conn{
+void NodeEditor::connect(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput) {
+	VisualConnection conn{
 		.source = source,
 		.destination = destination,
 		.destinationInput = destinationInput,

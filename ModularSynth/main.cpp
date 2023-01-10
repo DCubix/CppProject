@@ -13,7 +13,7 @@
 
 #include "Animator.h"
 
-#include "Audio.h"
+#include "GraphicsNode.h"
 
 #include "nanovg/nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
@@ -27,7 +27,7 @@
 class ControlTest : public Control {
 public:
 
-	void onDraw(NVGcontext* ctx, float deltaTime) {
+	void onDraw(NVGcontext* ctx, float deltaTime) override {
 		float v = anim.value(Curves::easeInOutCubic, deltaTime);
 		Rect b = bounds;
 		nvgBeginPath(ctx);
@@ -120,12 +120,12 @@ public:
 		gui->addControl(ned);
 
 		/* NODE TEST */
-		Node* nd = ned->createNode<Node>();
+		VisualNode* nd = ned->createNode<VisualNode>();
 		nd->addInput("A", NodeValueType::float1);
 		nd->addInput("B", NodeValueType::float1);
 		nd->addOutput("Out", NodeValueType::float1);
 
-		Node* nd1 = ned->createNode<Node>();
+		VisualNode* nd1 = ned->createNode<VisualNode>();
 		nd1->position.x = 100;
 		nd1->addInput("A", NodeValueType::float1);
 		nd1->addInput("B", NodeValueType::float1);
@@ -153,6 +153,14 @@ public:
 		rse->addOption(2, "Option 2");
 		rse->addOption(3, "Option 3");
 		rse->bounds = { 0, 0, 300, 25 };
+
+		graph = new NodeGraph();
+
+		ColorNode* col = graph->create<ColorNode>();
+		col->param("Color").value = { 1.0f, 0.4f, 0.8f, 0.8f };
+		col->solve();
+
+		image = nvglCreateImageFromHandleGL3(ctx, col->textureID(), 512, 512, 0);
 	}
 
 	void onUpdate(Application& app, float dt) {
@@ -163,17 +171,30 @@ public:
 
 		nvgBeginFrame(ctx, width, height, 1.0f);
 		gui->renderAll(ctx, dt);
+
+		NVGpaint imgPaint = nvgImagePattern(ctx, 0.0f, 0.0f, 512.0f, 512.0f, 0.0f, image, 1.0f);
+		nvgBeginPath(ctx);
+		nvgRect(ctx, 20.0f, 300.0f, 320.0f, 320.0f);
+		nvgFillPaint(ctx, imgPaint);
+		nvgFill(ctx);
+
 		nvgEndFrame(ctx);
 	}
 
 	void onExit() {
 		nvgDeleteGL3(ctx);
 		delete gui;
+		delete graph;
 	}
 
 	NVGcontext* ctx;
 	GUISystem* gui;
 	float bgColor[3] = { 0.1f, 0.2f, 0.4f };
+
+	float time{ 0.0f };
+	int image;
+
+	NodeGraph* graph;
 };
 
 int main(int argc, char** argv) {
