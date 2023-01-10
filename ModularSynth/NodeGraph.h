@@ -19,6 +19,7 @@ enum class NodeValueType : size_t {
 struct NodeValue {
 	RawNodeValue value{ 0.0f };
 	NodeValueType type;
+	bool connected{ false };
 };
 
 class Node {
@@ -38,6 +39,7 @@ public:
 	size_t id() const { return m_id; }
 
 protected:
+	bool m_solved{ false };
 	size_t m_id{ 0 };
 	std::vector<NodeValue> m_inputs, m_outputs;
 	std::vector<std::string> m_inputNames, m_outputNames;
@@ -77,6 +79,7 @@ public:
 	void connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
 
 	void solve();
+	size_t lastNode() const { return m_nodePath.empty() ? 0 : m_nodePath.front(); }
 
 private:
 	std::vector<std::unique_ptr<Node>> m_nodes;
@@ -96,6 +99,7 @@ private:
 
 	std::vector<Connection> getNodeInputConnections(Node* node);
 	std::vector<Connection> getNodeOutputConnections(Node* node);
+	std::vector<size_t> getRightMostNodes();
 	std::vector<size_t> getPathFrom(Node* node);
 	void buildNodePath();
 

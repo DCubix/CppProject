@@ -43,16 +43,21 @@ void GraphicsNode::setup() {
 	m_shader->add(processedSource(), GL_COMPUTE_SHADER);
 	m_shader->link();
 
+	addOutput("Output", NodeValueType::image);
+
 	std::cout << processedSource() << std::endl;
 }
 
-static void setUniformNodeValue(Shader* shader, const std::string& name, const NodeValue& nv) {
+static void setUniformNodeValue(Shader* shader, const std::string& name, const NodeValue& nv, size_t index) {
 	switch (nv.type) {
 		case NodeValueType::float1: shader->uniform<1>(name, { nv.value[0] }); break;
 		case NodeValueType::float2: shader->uniform<2>(name, { nv.value[0], nv.value[1] }); break;
 		case NodeValueType::float3: shader->uniform<3>(name, { nv.value[0], nv.value[1], nv.value[2] }); break;
 		case NodeValueType::float4: shader->uniform<4>(name, nv.value); break;
-		case NodeValueType::image: shader->uniformInt<1>(name, { int(nv.value[0]) }); break;
+		case NodeValueType::image: {
+			glBindImageTexture(index, GLuint(nv.value[0]), 0, false, 0, GL_READ_ONLY, GL_RGBA32F);
+			shader->uniformInt<1>(name, { int(index) });
+		} break;
 	}
 }
 
@@ -60,71 +65,92 @@ NodeValue GraphicsNode::solve() {
 	glBindImageTexture(0, m_texture->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	glUseProgram(m_shader->id());
 
-	m_shader->uniformInt<2>("uInternalResolution", { int(m_texture->size()[0]), int(m_texture->size()[1]) });
-
 	for (size_t i = 0; i < m_inputs.size(); i++) {
 		NodeValue& nv = m_inputs[i];
 		std::string name = std::format("uIn{}", toCorrectCase(m_inputNames[i]));
-		setUniformNodeValue(m_shader.get(), name, nv);
+		setUniformNodeValue(m_shader.get(), name, nv, i+2);
 	}
 
+	size_t i = 0;
 	for (auto&& [paramName, nv] : m_params) {
 		std::string name = std::format("uParam{}", toCorrectCase(paramName));
-		setUniformNodeValue(m_shader.get(), name, nv);
+		setUniformNodeValue(m_shader.get(), name, nv, i+2);
+		i++;
 	}
 
 	glDispatchCompute(m_texture->size()[0], m_texture->size()[1], 1);
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
-	return NodeValue();
+	m_solved = true;
+
+	m_outputs[0].value[0] = float(m_texture->id());
+
+	NodeValue ret = {
+		.value = m_outputs[0].value,
+		.type = NodeValueType::image
+	};
+	return ret;
 }
 
 std::string GraphicsNode::processedSource() {
+	std::string images = "";
 	std::string src = R"(#version 460
 	layout (local_size_x=1, local_size_y=1) in;
 	layout (rgba32f, binding=0) uniform image2D bOutput;
 	
-	uniform ivec2 uInternalResolution;
+	<images>
 
 	)";
 
 	for (size_t i = 0; i < m_inputs.size(); i++) {
 		NodeValue& nv = m_inputs[i];
-		
-		src += "uniform ";
+		auto name = toCorrectCase(m_inputNames[i]);
 
 		switch (nv.type) {
-			case NodeValueType::float1: src += "float"; break;
-			case NodeValueType::float2: src += "vec2"; break;
-			case NodeValueType::float3: src += "vec3"; break;
-			case NodeValueType::float4: src += "vec4"; break;
-			case NodeValueType::image: src += "sampler2D"; break;
+			case NodeValueType::float1: src += std::format("uniform float uIn{}", name); break;
+			case NodeValueType::float2: src += std::format("uniform vec2 uIn{}", name); break;
+			case NodeValueType::float3: src += std::format("uniform vec3 uIn{}", name); break;
+			case NodeValueType::float4: src += std::format("uniform vec4 uIn{}", name); break;
+			case NodeValueType::image:
+				images += std::format("layout (rgba32f, binding={}) uniform image2D uIn{};", i+2, name);
+				src += std::format("uniform bool uIn{}Connected;\n", toCorrectCase(name));
+			break;
 		}
 
-		src += " ";
-		src += std::format("uIn{};\n", toCorrectCase(m_inputNames[i]));
+		src += "\n";
 	}
 
 	src += "\n";
 
+	size_t i = 0;
 	for (auto&& [ paramName, nv ] : m_params) {
-		src += "uniform ";
+		auto name = toCorrectCase(paramName);
 
 		switch (nv.type) {
-			case NodeValueType::float1: src += "float"; break;
-			case NodeValueType::float2: src += "vec2"; break;
-			case NodeValueType::float3: src += "vec3"; break;
-			case NodeValueType::float4: src += "vec4"; break;
-			case NodeValueType::image: src += "sampler2D"; break;
+			case NodeValueType::float1: src += std::format("uniform float uParam{}", name); break;
+			case NodeValueType::float2: src += std::format("uniform vec2 uParam{}", name); break;
+			case NodeValueType::float3: src += std::format("uniform vec3 uParam{}", name); break;
+			case NodeValueType::float4: src += std::format("uniform vec4 uParam{}", name); break;
+			case NodeValueType::image:
+				images += std::format("layout (rgba32f, binding={}) uniform image2D uParam{};", i + 2, name);
+				src += std::format("uniform bool uParam{}Connected;\n", toCorrectCase(name));
+				break;
 		}
 
-		src += " ";
-		src += std::format("uParam{};\n", toCorrectCase(paramName));
+		src += "\n";
+		i++;
 	}
+
+	src.replace(src.find("<images>"), 8, images);
 
 	src += "\n";
 
-	src += R"(vec4 mainFunc(vec2 cUV) {
+	src += R"(
+	vec4 Sample(image2D img, vec2 uv) {
+		return imageLoad(img, ivec2(uv * imageSize(img)));
+	}
+
+	vec4 mainFunc(vec2 cUV) {
 	#line 1
 	)";
 
@@ -134,7 +160,7 @@ std::string GraphicsNode::processedSource() {
 	src += R"(
 	void main() {
 		ivec2 c__Coords = ivec2(gl_GlobalInvocationID.xy);
-		vec2 c__uv = vec2(c__Coords) / vec2(uInternalResolution);
+		vec2 c__uv = vec2(c__Coords) / vec2(gl_NumWorkGroups.xy);
 		vec4 pixel = mainFunc(c__uv);
 		imageStore(bOutput, c__Coords, pixel);
 	})";

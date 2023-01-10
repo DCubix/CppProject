@@ -156,11 +156,21 @@ public:
 
 		graph = new NodeGraph();
 
-		ColorNode* col = graph->create<ColorNode>();
-		col->param("Color").value = { 1.0f, 0.4f, 0.8f, 0.8f };
-		col->solve();
+		ColorNode* col1 = graph->create<ColorNode>();
+		col1->param("Color").value = { 1.0f, 0.0f, 0.0f, 1.0f };
 
-		image = nvglCreateImageFromHandleGL3(ctx, col->textureID(), 512, 512, 0);
+		ColorNode* col2 = graph->create<ColorNode>();
+		col2->param("Color").value = { 0.0f, 0.0f, 1.0f, 1.0f };
+
+		MixNode* mix = graph->create<MixNode>();
+		mix->param("Factor").value[0] = 0.5f;
+
+		graph->connect(col1, 0, mix, 0);
+		graph->connect(col2, 0, mix, 1);
+		
+		graph->solve();
+
+		image = nvglCreateImageFromHandleGL3(ctx, mix->textureID(), 512, 512, 0);
 	}
 
 	void onUpdate(Application& app, float dt) {
