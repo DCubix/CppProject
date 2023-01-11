@@ -5,6 +5,8 @@
 
 #include <array>
 
+using ControlID = size_t;
+
 enum class HorizontalAlignment {
 	left = 0,
 	center,
@@ -32,6 +34,7 @@ class Control : public MouseButtonListener,
 				public MouseMotionListener,
 				public KeyboardListener
 {
+	friend class GUISystem;
 public:
 	Control() = default;
 	virtual ~Control() = default;
@@ -51,6 +54,9 @@ public:
 	virtual void onKeyRelease(int keyCode) {}
 	virtual void onType(TCHAR charCode) {}
 
+	virtual std::vector<Control*> onGetExtraControls() { return std::vector<Control*>(); }
+	virtual void clearExtraControls() {}
+
 	void onEventReceived(const KeyboardEvent& e);
 	void onEventReceived(const MouseMotionEvent& e);
 	void onEventReceived(const MouseButtonEvent& e);
@@ -58,9 +64,14 @@ public:
 	Rect screenSpaceBounds();
 	Rect localBounds();
 
+	ControlID id() const { return m_id; }
+
 	Rect bounds{};
-private:
+
+protected:
 	Control* m_parent{ nullptr };
+	ControlID m_id{ 0 };
+
 	bool m_mouseInside{ false };
 
 	Point screenToLocalPoint(Point src);

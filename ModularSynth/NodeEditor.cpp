@@ -32,7 +32,15 @@ static void beginConnection(NVGcontext* ctx, Point a, Point b) {
 	}
 }
 
+NodeEditor::NodeEditor() {
+	m_graph = std::make_unique<NodeGraph>();
+}
+
 void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
+	if (m_graph->hasChanges()) {
+		m_graph->solve();
+	}
+
 	Rect b = bounds;
 
 	nvgBeginPath(ctx);
@@ -122,6 +130,7 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 		}
 		else {
 			m_state = m_selectedOutput != -1 ? NodeEditorState::draggingConnection : NodeEditorState::draggingNode;
+			if (onSelect) onSelect(get(m_selectedNode));
 		}
 	}
 }
@@ -213,8 +222,8 @@ void VisualNode::onDraw(NVGcontext* ctx, float deltaTime) {
 	float size[4];
 	float posY = titleHeight + padding;
 
-	if (m_inputRects.size() < m_inputs.size()) {
-		m_inputRects.resize(m_inputs.size());
+	if (m_inputRects.size() < inputCount()) {
+		m_inputRects.resize(inputCount());
 	}
 
 	nvgFontSize(ctx, bodyTextFontSize);
@@ -222,10 +231,10 @@ void VisualNode::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgTextAlign(ctx, NVG_ALIGN_TOP);
 	nvgStrokeWidth(ctx, 1.0f);
 
-	for (size_t i = 0; i < m_inputs.size(); i++) {
-		nvgTextBounds(ctx, 0.0f, 0.0f, m_inputNames[i].c_str(), nullptr, size);
+	for (size_t i = 0; i < inputCount(); i++) {
+		nvgTextBounds(ctx, 0.0f, 0.0f, m_node->inputName(i).c_str(), nullptr, size);
 		nvgFillColor(ctx, nvgRGBf(0.0f, 0.0f, 0.0f));
-		nvgText(ctx, padding, posY + 1.5f, m_inputNames[i].c_str(), nullptr);
+		nvgText(ctx, padding, posY + 1.5f, m_node->inputName(i).c_str(), nullptr);
 
 		float halfTextHeight = (size[3] - size[1]) / 2.0f;
 
@@ -246,14 +255,14 @@ void VisualNode::onDraw(NVGcontext* ctx, float deltaTime) {
 
 	posY = titleHeight + padding;
 
-	if (m_outputRects.size() < m_outputs.size()) {
-		m_outputRects.resize(m_outputs.size());
+	if (m_outputRects.size() < outputCount()) {
+		m_outputRects.resize(outputCount());
 	}
 
-	for (size_t i = 0; i < m_outputs.size(); i++) {
-		nvgTextBounds(ctx, 0.0f, 0.0f, m_outputNames[i].c_str(), nullptr, size);
+	for (size_t i = 0; i < outputCount(); i++) {
+		nvgTextBounds(ctx, 0.0f, 0.0f, m_node->outputName(i).c_str(), nullptr, size);
 		nvgFillColor(ctx, nvgRGBf(0.0f, 0.0f, 0.0f));
-		nvgText(ctx, b.width - padding, posY + 1.5f, m_outputNames[i].c_str(), nullptr);
+		nvgText(ctx, b.width - padding, posY + 1.5f, m_node->outputName(i).c_str(), nullptr);
 
 		float halfTextHeight = (size[3] - size[1]) / 2.0f;
 
@@ -270,19 +279,12 @@ void VisualNode::onDraw(NVGcontext* ctx, float deltaTime) {
 		posY += halfTextHeight * 2.0f + gapBetweenInOuts;
 	}
 
+	nvgSave(ctx);
+	nvgTranslate(ctx, padding, sz.height - (extraSize().height + padding));
+	onExtraDraw(ctx, deltaTime);
 	nvgRestore(ctx);
-}
 
-size_t VisualNode::addInput(const std::string& name, NodeValueType type) {
-	m_inputs.push_back({ .type = type });
-	m_inputNames.push_back(name);
-	return m_inputs.size() - 1;
-}
-
-size_t VisualNode::addOutput(const std::string& name, NodeValueType type) {
-	m_outputs.push_back({ .type = type });
-	m_outputNames.push_back(name);
-	return m_outputs.size() - 1;
+	nvgRestore(ctx);
 }
 
 Dimension VisualNode::computeSize(NVGcontext* ctx) {
@@ -308,8 +310,8 @@ Dimension VisualNode::computeSize(NVGcontext* ctx) {
 	float maxInputWidth = 0.0f;
 	float inputsHeight = 0.0f;
 
-	for (size_t i = 0; i < m_inputs.size(); i++) {
-		nvgTextBounds(ctx, 0.0f, 0.0f, m_inputNames[i].c_str(), nullptr, size);
+	for (size_t i = 0; i < inputCount(); i++) {
+		nvgTextBounds(ctx, 0.0f, 0.0f, m_node->inputName(i).c_str(), nullptr, size);
 		maxInputWidth = std::max(maxInputWidth, size[2] - size[0]);
 		inputsHeight += size[3] - size[1];
 	}
@@ -318,8 +320,8 @@ Dimension VisualNode::computeSize(NVGcontext* ctx) {
 	float maxOutputWidth = 0.0f;
 	float outputsHeight = 0.0f;
 
-	for (size_t i = 0; i < m_outputs.size(); i++) {
-		nvgTextBounds(ctx, 0.0f, 0.0f, m_outputNames[i].c_str(), nullptr, size);
+	for (size_t i = 0; i < outputCount(); i++) {
+		nvgTextBounds(ctx, 0.0f, 0.0f, m_node->outputName(i).c_str(), nullptr, size);
 		maxOutputWidth = std::max(maxOutputWidth, size[2] - size[0]);
 		outputsHeight += size[3] - size[1];
 	}
@@ -327,8 +329,11 @@ Dimension VisualNode::computeSize(NVGcontext* ctx) {
 	width = std::max(width, int(maxInputWidth) + gapBetweenSides + int(maxOutputWidth));
 	height += std::max(int(inputsHeight), int(outputsHeight));
 
-	const size_t connectableCount = std::max(m_inputs.size(), m_outputs.size());
+	const size_t connectableCount = std::max(outputCount(), inputCount());
 	height += gapBetweenInOuts * connectableCount;
+
+	width = std::max(width, extraSize().width + padding * 2);
+	height += extraSize().height;
 
 	// some extra magic-number-driven padding on the bottom...
 	height += 8;
@@ -349,4 +354,7 @@ void NodeEditor::connect(VisualNode* source, size_t sourceOutput, VisualNode* de
 		.sourceOutput = sourceOutput
 	};
 	m_connections.push_back(conn);
+
+	m_graph->connect(source->node(), sourceOutput, destination->node(), destinationInput);
+	m_graph->solve();
 }

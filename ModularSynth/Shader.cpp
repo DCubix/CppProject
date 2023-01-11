@@ -1,5 +1,7 @@
 #include "Shader.h"
 
+#include <Windows.h>
+
 Shader::~Shader() {
 	if (!m_program) return;
 
@@ -26,15 +28,21 @@ void Shader::link() {
 	GLint status;
 	glGetProgramiv(m_program, GL_LINK_STATUS, &status);
 	if (status != GL_TRUE) {
+		char log[1024];
+		glGetProgramInfoLog(m_program, 1024, nullptr, log);
+
+		OutputDebugStringA(log);
+		OutputDebugStringA("\n");
+
 		glDeleteProgram(m_program);
 		return;
 	}
 
-	for (auto shader : m_shaders) {
+	/*for (auto shader : m_shaders) {
 		glDetachShader(m_program, shader);
 		glDeleteShader(shader);
 	}
-	m_shaders.clear();
+	m_shaders.clear();*/
 }
 
 GLint Shader::getUniformLocation(const std::string& name) {
@@ -56,6 +64,12 @@ GLuint Shader::createShader(const std::string& src, GLenum type) {
 	GLint status;
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
 	if (status != GL_TRUE) {
+		char log[1024];
+		glGetShaderInfoLog(shader, 1024, nullptr, log);
+
+		OutputDebugStringA(log);
+		OutputDebugStringA("\n");
+
 		glDeleteShader(shader);
 		return 0;
 	}

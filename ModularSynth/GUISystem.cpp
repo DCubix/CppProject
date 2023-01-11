@@ -1,18 +1,62 @@
 #include "GUISystem.h"
 
 #include "Application.h"
+#include "Panel.h"
 
-void GUISystem::addControl(Control* control) {
-	m_controls.push_back(std::unique_ptr<Control>(control));
+ControlID GUISystem::g_ControlID = 1;
 
-	auto ctrl = m_controls.back().get();
+void GUISystem::createControl(Control* control) {
+	control->m_id = g_ControlID++;
+	m_controls[control->m_id] = std::shared_ptr<Control>(control);
+
+	auto&& ctrl = m_controls[control->m_id];
 	m_mouseButtonEventSystem->addListener(ctrl);
 	m_mouseMotionEventSystem->addListener(ctrl);
 	m_keyboardEventSystem->addListener(ctrl);
 }
 
+void GUISystem::addControl(Control* control) {
+	m_controlsAdd.push_back(control);
+}
+
+void GUISystem::deleteControl(ControlID control) {
+	if (m_controls.find(control) == m_controls.end()) return;
+
+	auto&& ctrl = m_controls[control];
+	ctrl->clearExtraControls();
+
+	m_mouseButtonEventSystem->removeListener(ctrl);
+	m_mouseMotionEventSystem->removeListener(ctrl);
+	m_keyboardEventSystem->removeListener(ctrl);
+
+	m_controls.erase(control);
+}
+
+void GUISystem::begin() {
+	for (auto&& ctrl : m_controlsAdd) {
+		createControl(ctrl);
+	}
+	m_controlsAdd.clear();
+}
+
+void GUISystem::end() {
+	for (auto&& ctrl : m_controlsRemove) {
+		deleteControl(ctrl);
+	}
+	m_controlsRemove.clear();
+}
+
+void GUISystem::removeControl(ControlID control) {
+	m_controlsRemove.push_back(control);
+	for (auto&& ctrl : m_controls[control]->onGetExtraControls()) {
+		removeControl(ctrl->id());
+	}
+}
+
 void GUISystem::renderAll(NVGcontext* ctx, float deltaTime) {
-	for (auto&& ctrl : m_controls) {
+	end();
+	begin();
+	for (auto&& [ cid, ctrl ] : m_controls) {
 		if (ctrl->parent()) continue; // Parent handles drawing of children.
 
 		nvgSave(ctx);
@@ -25,7 +69,7 @@ void GUISystem::renderAll(NVGcontext* ctx, float deltaTime) {
 		nvgRestore(ctx);
 	}
 
-	for (auto&& ctrl : m_controls) {
+	for (auto&& [cid, ctrl] : m_controls) {
 		nvgSave(ctx);
 
 		// make local coordinates

@@ -14,6 +14,7 @@
 #include "Animator.h"
 
 #include "GraphicsNode.h"
+#include "TextureNodeRegistry.h"
 
 #include "nanovg/nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
@@ -69,108 +70,43 @@ public:
 		gui = new GUISystem();
 		gui->attachToApplication(app);
 
-		Label* lbl = new Label();
-		gui->addControl(lbl);
-
-		Button* btn = new Button();
-		gui->addControl(btn);
-
-		Slider* sld = new Slider();
-		gui->addControl(sld);
-
-		CheckBox* ckb = new CheckBox();
-		gui->addControl(ckb);
-
-		RadioSelector* rse = new RadioSelector();
-		gui->addControl(rse);
-
 		Panel* pnl = new Panel();
-		gui->addControl(pnl);
-
+		pnl->title = "Settings";
 		pnl->setLayout(new ColumnLayout());
-
-		pnl->addChild(lbl);
-		pnl->addChild(btn);
-		pnl->addChild(sld);
-		pnl->addChild(rse);
-		pnl->addChild(ckb);
-
-		Panel* pnl2 = new Panel();
-		gui->addControl(pnl2);
-		pnl2->setLayout(new RowLayout(3));
-		pnl2->drawBackground(false);
-		pnl2->bounds = { 0, 0, 0, 64 };
-		for (int i = 0; i < 3; i++) {
-			Knob* knb = new Knob();
-			gui->addControl(knb);
-			pnl2->addChild(knb);
-
-			knb->bounds = { 0, 0, 48, 48 };
-			knb->step = 0.01f;
-			knb->value = bgColor[i];
-			knb->onChange = [=](float v) {
-				bgColor[i] = v;
-			};
-		}
-
-		pnl->addChild(pnl2);
+		gui->addControl(pnl);
 
 		NodeEditor* ned = new NodeEditor();
 		ned->bounds = { 270, 12, int(app.window().size().first) - 282, int(app.window().size().second) - 24 };
 		gui->addControl(ned);
 
-		/* NODE TEST */
-		VisualNode* nd = ned->createNode<VisualNode>();
-		nd->addInput("A", NodeValueType::float1);
-		nd->addInput("B", NodeValueType::float1);
-		nd->addOutput("Out", NodeValueType::float1);
+		ned->onSelect = [=](VisualNode* node) {
+			if (singleNodeEditor) {
+				pnl->removeChild(singleNodeEditor);
+				gui->removeControl(singleNodeEditor->id());
+				singleNodeEditor = nullptr;
+			}
+			singleNodeEditor = createTextureNodeEditorGui(gui, node);
+			if (singleNodeEditor) {
+				pnl->addChild(singleNodeEditor);
+			}
+		};
 
-		VisualNode* nd1 = ned->createNode<VisualNode>();
-		nd1->position.x = 100;
-		nd1->addInput("A", NodeValueType::float1);
-		nd1->addInput("B", NodeValueType::float1);
-		nd1->addOutput("Out", NodeValueType::float1);
+		/* NODE TEST */
+		auto col1 = createNewTextureNode(ned, "COL");
+		((GraphicsNode*)col1->node())->setParam("Color", { 1.0f, 0.0f, 0.0f, 1.0f });
+		auto col2 = createNewTextureNode(ned, "COL");
+		((GraphicsNode*)col2->node())->setParam("Color", { 0.0f, 1.0f, 0.0f, 1.0f });
+
+		auto sgr = createNewTextureNode(ned, "SGR");
+		auto mix = createNewTextureNode(ned, "MIX");
+
+		//ned->connect(col1, 0, mix, 0);
+		//ned->connect(col2, 0, mix, 1);
+		//ned->connect(sgr, 0, mix, 2);
 
 		/* --------- */
 
 		pnl->bounds = { 12, 12, 250, int(app.window().size().second) - 24 };
-
-		lbl->text = "Hello World! Testing stuff...";
-		lbl->bounds = { 0, 0, 200, 40 };
-		lbl->alignment = HorizontalAlignment::center;
-
-		btn->text = "Basic Button";
-		btn->bounds = { 0, 0, 140, 40 };
-
-		sld->bounds = { 0, 50, 140, 40 };
-		sld->step = 0.01f;
-		sld->valueFormat = "{:.2f} sec.";
-
-		ckb->text = "Check It Out";
-		ckb->bounds = { 0, 0, 120, 26 };
-
-		rse->addOption(1, "Option 1");
-		rse->addOption(2, "Option 2");
-		rse->addOption(3, "Option 3");
-		rse->bounds = { 0, 0, 300, 25 };
-
-		graph = new NodeGraph();
-
-		ColorNode* col1 = graph->create<ColorNode>();
-		col1->param("Color").value = { 1.0f, 0.0f, 0.0f, 1.0f };
-
-		ColorNode* col2 = graph->create<ColorNode>();
-		col2->param("Color").value = { 0.0f, 0.0f, 1.0f, 1.0f };
-
-		MixNode* mix = graph->create<MixNode>();
-		mix->param("Factor").value[0] = 0.5f;
-
-		graph->connect(col1, 0, mix, 0);
-		graph->connect(col2, 0, mix, 1);
-		
-		graph->solve();
-
-		image = nvglCreateImageFromHandleGL3(ctx, mix->textureID(), 512, 512, 0);
 	}
 
 	void onUpdate(Application& app, float dt) {
@@ -180,13 +116,8 @@ public:
 		glClear(GL_COLOR_BUFFER_BIT);
 
 		nvgBeginFrame(ctx, width, height, 1.0f);
-		gui->renderAll(ctx, dt);
 
-		NVGpaint imgPaint = nvgImagePattern(ctx, 0.0f, 0.0f, 512.0f, 512.0f, 0.0f, image, 1.0f);
-		nvgBeginPath(ctx);
-		nvgRect(ctx, 20.0f, 300.0f, 320.0f, 320.0f);
-		nvgFillPaint(ctx, imgPaint);
-		nvgFill(ctx);
+		gui->renderAll(ctx, dt);
 
 		nvgEndFrame(ctx);
 	}
@@ -194,17 +125,15 @@ public:
 	void onExit() {
 		nvgDeleteGL3(ctx);
 		delete gui;
-		delete graph;
 	}
 
 	NVGcontext* ctx;
+
 	GUISystem* gui;
+	Control* singleNodeEditor{ nullptr };
 	float bgColor[3] = { 0.1f, 0.2f, 0.4f };
 
-	float time{ 0.0f };
 	int image;
-
-	NodeGraph* graph;
 };
 
 int main(int argc, char** argv) {

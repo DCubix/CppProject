@@ -44,6 +44,6 @@ void Texture::init(size_t dimensions) {
 	}
 
 	// TODO: Set filter
-	glTextureParameteri(m_id, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTextureParameteri(m_id, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTextureParameteri(m_id, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTextureParameteri(m_id, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }

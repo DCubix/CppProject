@@ -37,9 +37,18 @@ public:
 	virtual void setup() = 0;
 
 	size_t id() const { return m_id; }
+	size_t outputCount() const { return m_outputs.size(); }
+	size_t inputCount() const { return m_inputs.size(); }
+
+	const std::string& inputName(size_t index) const { return m_inputNames[index]; }
+	const std::string& outputName(size_t index) const { return m_outputNames[index]; }
+
+	bool changed() const { return m_changed; }
 
 protected:
 	bool m_solved{ false };
+	bool m_changed{ false };
+
 	size_t m_id{ 0 };
 	std::vector<NodeValue> m_inputs, m_outputs;
 	std::vector<std::string> m_inputNames, m_outputNames;
@@ -80,6 +89,8 @@ public:
 
 	void solve();
 	size_t lastNode() const { return m_nodePath.empty() ? 0 : m_nodePath.front(); }
+
+	bool hasChanges() const;
 
 private:
 	std::vector<std::unique_ptr<Node>> m_nodes;

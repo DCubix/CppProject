@@ -53,6 +53,17 @@ void Panel::addChild(Control* control) {
 	m_children.push_back(control);
 }
 
+void Panel::removeChild(Control* control) {
+	control->parent(nullptr);
+	m_children.erase(
+		std::remove_if(
+			m_children.begin(), m_children.end(),
+			[control](Control* ctrl) { return ctrl->id() == control->id(); }
+		),
+		m_children.end()
+	);
+}
+
 void ColumnLayout::beginLayout() {
 	m_ypos = 0;
 }
@@ -77,4 +88,11 @@ void RowLayout::performLayout(Control* control, Dimension parentSize, size_t ind
 	control->bounds.y = padding;
 
 	m_xpos += columnWidth;
+}
+
+void Panel::clearExtraControls() {
+	for (auto&& child : m_children) {
+		child->parent(nullptr);
+	}
+	m_children.clear();
 }

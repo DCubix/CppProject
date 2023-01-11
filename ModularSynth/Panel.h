@@ -17,6 +17,12 @@ public:
 
 	void setLayout(Layout* layout);
 	void addChild(Control* control);
+	void removeChild(Control* control);
+
+	std::vector<Control*> onGetExtraControls() override { return m_children; }
+	void clearExtraControls() override;
+
+	std::vector<Control*> children() { return m_children; }
 
 	void drawBackground(bool visible) { m_drawBackground = visible; }
 

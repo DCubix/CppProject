@@ -18,7 +18,30 @@ public:
 	uint32_t outputWidth, outputHeight;
 
 	void addParam(const std::string& name, NodeValueType type);
-	NodeValue& param(const std::string& name) { return m_params[name]; }
+
+	const NodeValue& param(const std::string& name) { return m_params[name]; }
+
+	void setParam(const std::string& name, const RawNodeValue& value) { m_params[name].value = value; m_changed = true; }
+	void setParam(const std::string& name, float v) { m_params[name].value[0] = v; m_changed = true; }
+	void setParam(const std::string& name, float x, float y) {
+		m_params[name].value[0] = x;
+		m_params[name].value[1] = y;
+		m_changed = true;
+	}
+	void setParam(const std::string& name, float x, float y, float z) {
+		m_params[name].value[0] = x;
+		m_params[name].value[1] = y;
+		m_params[name].value[2] = z;
+		m_changed = true;
+	}
+	void setParam(const std::string& name, float x, float y, float z, float w) {
+		m_params[name].value[0] = x;
+		m_params[name].value[1] = y;
+		m_params[name].value[2] = z;
+		m_params[name].value[3] = w;
+		m_changed = true;
+	}
+	void setParam(const std::string& name, size_t index, float v) { m_params[name].value[index] = v; m_changed = true; }
 
 	GLuint textureID() const { return m_texture->id(); }
 
@@ -29,48 +52,4 @@ private:
 	std::map<std::string, NodeValue> m_params;
 
 	std::string processedSource();
-};
-
-// Basic nodes for "testing"
-class ColorNode : public GraphicsNode {
-public:
-	std::string source() {
-		return R"(
-			return uParamColor;
-		)";
-	}
-
-	void onCreate() {
-		// TODO: How to maintain the same size accross nodes?
-		outputWidth = 512;
-		outputHeight = 512;
-		addParam("Color", NodeValueType::float4);
-	}
-
-};
-
-class MixNode : public GraphicsNode {
-public:
-	std::string source() {
-		return R"(
-			vec4 va = Sample(uInA, cUV);
-			vec4 vb = Sample(uInB, cUV);
-			float vf = uParamFactor;
-			if (uInFactorConnected) {
-				vf *= dot(Sample(uInFactor, cUV).rgb, vec3(0.299, 0.587, 0.114));
-			}
-			return mix(va, vb, vf);
-		)";
-	}
-
-	void onCreate() {
-		// TODO: How to maintain the same size accross nodes?
-		outputWidth = 512;
-		outputHeight = 512;
-		addInput("A", NodeValueType::image);
-		addInput("B", NodeValueType::image);
-		addInput("Factor", NodeValueType::image);
-		addParam("Factor", NodeValueType::float1);
-	}
-
 };

@@ -185,7 +185,7 @@
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="Slider.cpp" />
     <ClCompile Include="Texture.cpp" />
-    <ClCompile Include="TextureNodeGraph.cpp" />
+    <ClCompile Include="TextureNodeRegistry.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -218,7 +218,8 @@
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Slider.h" />
     <ClInclude Include="Texture.h" />
-    <ClInclude Include="TextureNodeGraph.h" />
+    <ClInclude Include="TextureNodes.hpp" />
+    <ClInclude Include="TextureNodeRegistry.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

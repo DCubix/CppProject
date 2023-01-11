@@ -46,6 +46,7 @@ void NodeGraph::solve() {
 	for (size_t i = 0; i < m_nodePath.size(); i++) {
 		Node* node = get(m_nodePath[i]);
 		node->m_solved = false;
+		node->m_changed = false;
 		nodes.push(node);
 	}
 
@@ -63,6 +64,13 @@ void NodeGraph::solve() {
 			to->input(conn.destinationInput).value = from->output(conn.sourceOutput).value;
 		}
 	}
+}
+
+bool NodeGraph::hasChanges() const {
+	for (auto&& node : m_nodes) {
+		if (node->changed()) return true;
+	}
+	return false;
 }
 
 std::vector<Connection> NodeGraph::getNodeInputConnections(Node* node) {

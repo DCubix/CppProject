@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <cassert>
+#include <memory>
 
 template <typename EventType>
 class Listener {
@@ -13,32 +14,35 @@ public:
 };
 
 template <typename EventType>
-class EventSystemBase {
+class EventSystem {
 public:
-	EventSystemBase() = default;
-	~EventSystemBase() = default;
+	using ListenerPtr = std::shared_ptr<Listener<EventType>>;
 
-	void addListener(Listener<EventType>* listener) {
+	EventSystem() = default;
+	~EventSystem() = default;
+
+	void addListener(const ListenerPtr& listener) {
 		assert(listener != nullptr);
 		m_listeners.push_back(listener);
 	}
 
-	void removeListener(Listener<EventType>* listener) {
+	void removeListener(const ListenerPtr& listener) {
 		assert(listener != nullptr);
-		auto pos = std::find(m_listeners.begin(), m_listeners.end(), listener);
+		auto pos = std::find_if(m_listeners.begin(), m_listeners.end(), [&](ListenerPtr& el) { return el.get() == listener.get(); });
 		if (pos != m_listeners.end()) {
 			m_listeners.erase(pos);
 		}
 	}
 
 	void notify(const EventType& e) {
-		for (auto&& listener : m_listeners) {
+		for (ListenerPtr& listener : m_listeners) {
+			if (listener.use_count() == 0) continue;
 			listener->onEventReceived(e);
 		}
 	}
 
 private:
-	std::vector<Listener<EventType>*> m_listeners;
+	std::vector<ListenerPtr> m_listeners;
 };
 
 /**   EVENT TYPES   */
@@ -50,7 +54,7 @@ struct MouseMotionEvent {
 };
 
 using MouseMotionListener = Listener<MouseMotionEvent>;
-using MouseMotionEventSystem = EventSystemBase<MouseMotionEvent>;
+using MouseMotionEventSystem = EventSystem<MouseMotionEvent>;
 
 enum ButtonState {
 	pressed = 0,
@@ -64,7 +68,7 @@ struct MouseButtonEvent {
 };
 
 using MouseButtonListener = Listener<MouseButtonEvent>;
-using MouseButtonEventSystem = EventSystemBase<MouseButtonEvent>;
+using MouseButtonEventSystem = EventSystem<MouseButtonEvent>;
 
 
 struct KeyboardEvent {
@@ -75,4 +79,4 @@ struct KeyboardEvent {
 
 
 using KeyboardListener = Listener<KeyboardEvent>;
-using KeyboardEventSystem = EventSystemBase<KeyboardEvent>;
+using KeyboardEventSystem = EventSystem<KeyboardEvent>;

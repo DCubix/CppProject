@@ -115,9 +115,6 @@
     <ClCompile Include="NodeGraph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="TextureNodeGraph.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Texture.cpp">
       <Filter>Source Files\gfx</Filter>
     </ClCompile>
@@ -125,6 +122,9 @@
       <Filter>Source Files\gfx</Filter>
     </ClCompile>
     <ClCompile Include="GraphicsNode.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureNodeRegistry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -207,9 +207,6 @@
     <ClInclude Include="NodeGraph.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="TextureNodeGraph.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Texture.h">
       <Filter>Header Files\gfx</Filter>
     </ClInclude>
@@ -217,6 +214,12 @@
       <Filter>Header Files\gfx</Filter>
     </ClInclude>
     <ClInclude Include="GraphicsNode.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureNodes.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureNodeRegistry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

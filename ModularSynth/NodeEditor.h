@@ -1,6 +1,4 @@
 #pragma once
-#ifndef NODEEDITOR_H
-#define NODEEDITOR_H
 
 #define NOMINMAX
 
@@ -11,6 +9,7 @@
 #include <string>
 #include <memory>
 #include <algorithm>
+#include <functional>
 
 #include "NodeGraph.h"
 
@@ -27,34 +26,35 @@ class VisualNode {
 public:
 	void onDraw(NVGcontext* ctx, float deltaTime);
 
-	virtual size_t addInput(const std::string& name, NodeValueType type);
-	virtual size_t addOutput(const std::string& name, NodeValueType type);
-
-	virtual std::string name() const { return "Node"; };
-	virtual Color color() const { return { .r = 0.15f, .g = 0.76f, .b = 0.62f, .a = 1.0f }; };
-
-	virtual NodeValue solve() { return NodeValue(); }
+	const std::string& name() const { return m_name; }
+	const Color& color() const { return m_color; }
+	const std::string& code() const { return m_code; }
 
 	Rect getOutputRect(size_t index);
 	Rect getInputRect(size_t index);
 	Dimension computeSize(NVGcontext* ctx);
 	const Dimension& size() const { return m_size; }
 
-	size_t outputCount() const { return m_outputs.size(); }
-	size_t inputCount() const { return m_inputs.size(); }
+	virtual Dimension extraSize() { return Dimension(); }
+	virtual void onExtraDraw(NVGcontext* ctx, float deltaTime) {}
+
+	size_t outputCount() const { return m_node->outputCount(); }
+	size_t inputCount() const { return m_node->inputCount(); }
 
 	size_t id() const { return m_id; }
+	Node* node() { return m_node; }
 
 	Point position{ 0, 0 };
 
 protected:
 	size_t m_id{ 0 };
+
 	Dimension m_size{ 0, 0 };
 	std::vector<Rect> m_outputRects, m_inputRects;
-	std::vector<NodeValue> m_inputs, m_outputs;
+	Color m_color{ 1.0f, 1.0f, 1.0f, 1.0f };
+	std::string m_name{ "Node" }, m_code{ "NOD" };
 
-private:
-	std::vector<std::string> m_inputNames, m_outputNames;
+	Node* m_node{ nullptr };
 };
 
 template <typename T>
@@ -69,6 +69,8 @@ struct VisualConnection {
 
 class NodeEditor : public Control {
 public:
+	NodeEditor();
+
 	void onDraw(NVGcontext* ctx, float deltaTime) override;
 
 	void onMouseDown(int button, int x, int y) override;
@@ -76,12 +78,21 @@ public:
 	void onMouseMove(int x, int y, int dx, int dy) override;
 	void onMouseLeave() override;
 
-	template <VisualNodeObject T>
-	T* createNode() {
+	template <NodeObject U, VisualNodeObject T = VisualNode>
+	T* create(const std::string& name, const std::string& code, Color color) {
 		T* instance = new T();
+		U* node = m_graph->create<U>();
+
 		instance->m_id = g_NodeID++;
-		m_nodes.push_back(std::unique_ptr<VisualNode>(instance));
-		return m_nodes.back().get();
+		instance->m_node = node;
+		instance->m_name = name;
+		instance->m_color = color;
+		instance->m_code = code;
+
+		node->solve();
+
+		m_nodes.push_back(std::unique_ptr<T>(instance));
+		return dynamic_cast<T*>(m_nodes.back().get());
 	}
 
 	VisualNode* get(size_t id) {
@@ -96,9 +107,15 @@ public:
 
 	void connect(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput);
 
+	NodeGraph* graph() { return m_graph.get(); }
+
+	std::function<void(VisualNode*)> onSelect{ nullptr };
+
 private:
 	std::vector<std::unique_ptr<VisualNode>> m_nodes;
 	std::vector<VisualConnection> m_connections;
+
+	std::unique_ptr<NodeGraph> m_graph;
 
 	size_t m_selectedNode{ 0 };
 	int m_selectedOutput{ -1 };
@@ -107,5 +124,3 @@ private:
 
 	static size_t g_NodeID;
 };
-
-#endif // NODEEDITOR_H
