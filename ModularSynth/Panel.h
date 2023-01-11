@@ -3,6 +3,7 @@
 #include "Control.h"
 #include <memory>
 #include <string>
+#include <map>
 
 class Layout {
 public:
@@ -49,12 +50,13 @@ private:
 
 class RowLayout : public Layout {
 public:
-	RowLayout(int columns = 2, int padding = 6) : columns(columns), padding(padding) {}
+	RowLayout(int columns = 2, int padding = 6, int gap = 6) : columns(columns), padding(padding), gap(gap) {}
 
 	void beginLayout() override;
 	void performLayout(Control* control, Dimension parentSize, size_t index);
 
-	int padding{ 6 }, columns{ 2 };
+	int padding{ 6 }, columns{ 2 }, gap{ 6 };
+	std::map<size_t, float> expansion;
 private:
 	int m_xpos{ 0 };
 };

@@ -51,7 +51,8 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgSave(ctx);
 
 	nvgScissor(ctx, 6.0f, 6.0f, b.width - 12.0f, b.height - 12.0f);
-	for (auto&& node : m_nodes) {
+	for (size_t nodeId : m_drawOrders) {
+		auto node = get(nodeId);
 		node->onDraw(ctx, deltaTime);
 	}
 
@@ -95,6 +96,35 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 		}
 	}
 
+	if (m_selectedNode) {
+		auto node = get(m_selectedNode);
+		Dimension sz = node->size();
+		Rect bounds = { node->position.x, node->position.y, sz.width, sz.height };
+		bounds.inflate(10);
+
+		nvgBeginPath(ctx);
+		nvgMoveTo(ctx, bounds.x, bounds.y + 10);
+		nvgArcTo(ctx, bounds.x, bounds.y, bounds.x + 10, bounds.y, 10.0f);
+
+		nvgMoveTo(ctx, bounds.x + bounds.width - 10, bounds.y);
+		nvgArcTo(ctx, bounds.x + bounds.width, bounds.y, bounds.x + bounds.width, bounds.y + 10, 10.0f);
+
+		nvgMoveTo(ctx, bounds.x, bounds.y + bounds.height - 10);
+		nvgArcTo(ctx, bounds.x, bounds.y + bounds.height, bounds.x + 10, bounds.y + bounds.height, 10.0f);
+
+		nvgMoveTo(ctx, bounds.x + bounds.width, bounds.y + bounds.height - 10);
+		nvgArcTo(ctx, bounds.x + bounds.width, bounds.y + bounds.height, bounds.x + bounds.width - 10, bounds.y + bounds.height, 10.0f);
+
+		nvgStrokeWidth(ctx, 6.0f);
+		nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.3f));
+		nvgStroke(ctx);
+
+		nvgBeginPath(ctx);
+		nvgRoundedRect(ctx, bounds.x, bounds.y, bounds.width, bounds.height, 10.0f);
+		nvgStrokeWidth(ctx, 2.5f);
+		nvgStroke(ctx);
+	}
+
 	nvgRestore(ctx);
 }
 
@@ -103,13 +133,17 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 
 	if (button == 1) {
 		bool clickedOnSomet = false;
-		for (auto&& node : m_nodes) {
+		size_t clickedNode = 0;
+		for (size_t i = m_drawOrders.size(); i-- > 0;) {
+			auto node = get(m_drawOrders[i]);
 			Dimension sz = node->size();
 			Rect bounds = { node->position.x - 5, node->position.y, sz.width + 10, sz.height };
 			if (bounds.hasPoint({ x, y })) {
-				m_selectedNode = node->id();
-				m_selectedOutput = -1;
 				clickedOnSomet = true;
+				clickedNode = node->id();
+				m_selectedOutput = -1;
+
+				rebuildDrawOrder();
 
 				// check for out click
 				for (size_t i = 0; i < node->outputCount(); i++) {
@@ -130,7 +164,10 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 		}
 		else {
 			m_state = m_selectedOutput != -1 ? NodeEditorState::draggingConnection : NodeEditorState::draggingNode;
-			if (onSelect) onSelect(get(m_selectedNode));
+			if (clickedNode != m_selectedNode) {
+				m_selectedNode = clickedNode;
+				if (onSelect) onSelect(get(m_selectedNode));
+			}
 		}
 	}
 }
@@ -357,4 +394,13 @@ void NodeEditor::connect(VisualNode* source, size_t sourceOutput, VisualNode* de
 
 	m_graph->connect(source->node(), sourceOutput, destination->node(), destinationInput);
 	m_graph->solve();
+}
+
+void NodeEditor::rebuildDrawOrder() {
+	m_drawOrders.clear();
+	for (auto&& node : m_nodes) {
+		if (node->id() == m_selectedNode) continue;
+		m_drawOrders.push_back(node->id());
+	}
+	if (m_selectedNode) m_drawOrders.push_back(m_selectedNode);
 }

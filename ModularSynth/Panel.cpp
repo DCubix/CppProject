@@ -80,14 +80,20 @@ void RowLayout::beginLayout() {
 }
 
 void RowLayout::performLayout(Control* control, Dimension parentSize, size_t index) {
-	const int columnWidth = (parentSize.width - padding * 2) / columns;
+	const int gapTotal = (columns - 1) * gap;
+	const int columnWidth = (parentSize.width - gapTotal - padding * 2) / columns;
+
+	float expand = 1.0f;
+	if (expansion.find(index) != expansion.end()) {
+		expand = expansion[index];
+	}
 
 	control->bounds.height = parentSize.height - padding * 2;
-	control->bounds.width = columnWidth;
+	control->bounds.width = int(float(columnWidth) * expand);
 	control->bounds.x = m_xpos + padding;
 	control->bounds.y = padding;
 
-	m_xpos += columnWidth;
+	m_xpos += control->bounds.width + gap;
 }
 
 void Panel::clearExtraControls() {

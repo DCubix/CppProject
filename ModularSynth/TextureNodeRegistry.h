@@ -6,6 +6,7 @@
 #include "GUISystem.h"
 #include "Slider.h"
 #include "Panel.h"
+#include "Label.h"
 
 #define hex2rgbf(h) { float((h & 0xFF0000) >> 16) / 255.0f, float((h & 0xFF00) >> 8) / 255.0f, float(h & 0xFF) / 255.0f, 1.0f }
 
@@ -38,9 +39,11 @@ struct NodeContructor {
 static Control* gui_ColorNode(GUISystem* gui, VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
-	pnl->bounds = { 0, 0, 0, 154 };
+	pnl->bounds = { 0, 0, 0, 0 };
 	pnl->setLayout(new ColumnLayout());
 	gui->addControl(pnl);
+
+	const std::string labels[] = { "Red", "Geen", "Blue", "Alpha" };
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 	for (size_t i = 0; i < 4; i++) {
@@ -52,17 +55,38 @@ static Control* gui_ColorNode(GUISystem* gui, VisualNode* node) {
 			nd->setParam("Color", i, v);
 		};
 
-		sld->bounds = { 0, 0, 0, 38 };
-		pnl->addChild(sld);
+		Label* lbl = new Label();
+		lbl->text = labels[i];
+		lbl->alignment = HorizontalAlignment::right;
+		gui->addControl(lbl);
+
+		Panel* row = new Panel();
+		row->drawBackground(false);
+		row->bounds = { 0, 0, 0, 30 };
+
+		RowLayout* rl = new RowLayout(2, 3);
+		rl->expansion[0] = 0.5f;
+		rl->expansion[1] = 1.5f;
+
+		row->setLayout(rl);
+
+		gui->addControl(row);
+
+		row->addChild(lbl);
+		row->addChild(sld);
+
+		pnl->addChild(row);
+
+		pnl->bounds.height += 30;
 	}
 
 	return pnl;
 }
 
-static Control* gui_SimpleGradientNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_MixNode(GUISystem* gui, VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
-	pnl->bounds = { 0, 0, 0, 40 };
+	pnl->bounds = { 0, 0, 0, 60 };
 	pnl->setLayout(new ColumnLayout());
 	gui->addControl(pnl);
 
@@ -70,14 +94,48 @@ static Control* gui_SimpleGradientNode(GUISystem* gui, VisualNode* node) {
 	Slider* sld = new Slider();
 	gui->addControl(sld);
 
+	Label* lbl = new Label();
+	lbl->text = "Factor";
+	lbl->bounds = { 0, 0, 0, 18 };
+	gui->addControl(lbl);
+
+	sld->value = nd->param("Factor").value[0];
+	sld->onChange = [=](float v) {
+		nd->setParam("Factor", v);
+	};
+	sld->bounds = { 0, 0, 0, 30 };
+
+	pnl->addChild(lbl);
+	pnl->addChild(sld);
+
+	return pnl;
+}
+
+static Control* gui_SimpleGradientNode(GUISystem* gui, VisualNode* node) {
+	Panel* pnl = new Panel();
+	pnl->drawBackground(false);
+	pnl->bounds = { 0, 0, 0, 60 };
+	pnl->setLayout(new ColumnLayout());
+	gui->addControl(pnl);
+
+	GraphicsNode* nd = (GraphicsNode*)node->node();
+	Slider* sld = new Slider();
+	gui->addControl(sld);
+
+	Label* lbl = new Label();
+	lbl->text = "Angle";
+	lbl->bounds = { 0, 0, 0, 18 };
+	gui->addControl(lbl);
+
 	sld->value = nd->param("Angle").value[0];
 	sld->onChange = [=](float v) {
 		nd->setParam("Angle", v);
 	};
 	sld->min = -PI;
 	sld->max = PI;
-	sld->bounds = { 0, 0, 0, 38 };
+	sld->bounds = { 0, 0, 0, 30 };
 
+	pnl->addChild(lbl);
 	pnl->addChild(sld);
 
 	return pnl;
@@ -85,7 +143,7 @@ static Control* gui_SimpleGradientNode(GUISystem* gui, VisualNode* node) {
 
 static NodeContructor nodeTypes[] = {
 	{ "COL", "Color", NodeCtor(ColorNode, generatorNodeColor), gui_ColorNode },
-	{ "MIX", "Mix", NodeCtor(MixNode, operatorNodeColor) },
+	{ "MIX", "Mix", NodeCtor(MixNode, operatorNodeColor), gui_MixNode },
 	{ "SGR", "Simple Gradient", NodeCtor(SimpleGradientNode, generatorNodeColor), gui_SimpleGradientNode },
 	{ "", "", nullptr, nullptr }
 };

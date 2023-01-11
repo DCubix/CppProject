@@ -45,6 +45,8 @@ public:
 
 	GLuint textureID() const { return m_texture->id(); }
 
+	const std::map<std::string, NodeValue>& params() { return m_params; }
+
 private:
 	std::unique_ptr<Texture> m_texture;
 	std::unique_ptr<Shader> m_shader;

@@ -92,6 +92,9 @@ public:
 		node->solve();
 
 		m_nodes.push_back(std::unique_ptr<T>(instance));
+
+		rebuildDrawOrder();
+
 		return dynamic_cast<T*>(m_nodes.back().get());
 	}
 
@@ -115,12 +118,16 @@ private:
 	std::vector<std::unique_ptr<VisualNode>> m_nodes;
 	std::vector<VisualConnection> m_connections;
 
+	std::vector<size_t> m_drawOrders;
+
 	std::unique_ptr<NodeGraph> m_graph;
 
 	size_t m_selectedNode{ 0 };
 	int m_selectedOutput{ -1 };
 	NodeEditorState m_state{ NodeEditorState::idling };
 	Point m_mousePos{ 0, 0 };
+
+	void rebuildDrawOrder();
 
 	static size_t g_NodeID;
 };
