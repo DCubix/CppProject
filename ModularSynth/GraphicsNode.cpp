@@ -87,7 +87,7 @@ NodeValue GraphicsNode::solve() {
 	}
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-	glDispatchCompute(m_texture->size()[0], m_texture->size()[1], 1);
+	glDispatchCompute(m_texture->size()[0]/16, m_texture->size()[1]/16, 1);
 
 	m_solved = true;
 
@@ -103,7 +103,7 @@ NodeValue GraphicsNode::solve() {
 std::string GraphicsNode::processedSource() {
 	std::string images = "";
 	std::string src = R"(#version 460
-layout (local_size_x=1, local_size_y=1) in;
+layout (local_size_x=16, local_size_y=16) in;
 layout (rgba8, binding=0) uniform image2D bOutput;
 	
 <images>
@@ -180,7 +180,7 @@ vec4 mainFunc(vec2 cUV) {
 	src += R"(
 void main() {
 	ivec2 c__Coords = ivec2(gl_GlobalInvocationID.xy);
-	vec2 c__uv = vec2(c__Coords) / vec2(gl_NumWorkGroups.xy);
+	vec2 c__uv = vec2(c__Coords) / vec2(gl_NumWorkGroups.xy * 16);
 	vec4 pixel = mainFunc(c__uv);
 	imageStore(bOutput, c__Coords, pixel);
 })";

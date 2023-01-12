@@ -22,6 +22,7 @@
 
 #include <format>
 #include <sstream>
+#include <array>
 
 #include <iostream>
 
@@ -108,6 +109,21 @@ public:
 		/* --------- */
 
 		pnl->bounds = { 12, 12, 320, int(app.window().size().second) - 24 };
+
+
+		int wgCount[3], wgSize[3];
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &wgCount[0]);
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &wgCount[1]);
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &wgCount[2]);
+
+		std::cout << "Work group count: " << wgCount[0] << ", " << wgCount[1] << ", " << wgCount[2] << '\n';
+
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 0, &wgSize[0]);
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &wgSize[1]);
+		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &wgSize[2]);
+
+		std::cout << "Work group size: " << wgSize[0] << ", " << wgSize[1] << ", " << wgSize[2] << '\n';
+
 	}
 
 	void onUpdate(Application& app, float dt) {
