@@ -191,6 +191,47 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 	m_state = NodeEditorState::idling;
 }
 
+std::vector<VisualConnection> NodeEditor::getConnectionsTo(VisualNode* node) {
+	std::vector<VisualConnection> ret;
+	for (auto&& conn : m_connections) {
+		if (conn.destination != node) continue;
+		ret.push_back(conn);
+
+		auto conns = getConnectionsTo(conn.source);
+		ret.insert(ret.end(), conns.begin(), conns.end());
+	}
+	return ret;
+}
+
+std::vector<VisualConnection> NodeEditor::getConnectionsFrom(VisualNode* node) {
+	std::vector<VisualConnection> ret;
+	for (auto&& conn : m_connections) {
+		if (conn.source != node) continue;
+		ret.push_back(conn);
+
+		auto conns = getConnectionsFrom(conn.destination);
+		ret.insert(ret.end(), conns.begin(), conns.end());
+	}
+	return ret;
+}
+
+void NodeEditor::moveNodeTree(VisualNode* node, int dx, int dy) {
+	node->position.x += dx;
+	node->position.y += dy;
+
+	// move outputs
+	for (auto&& conn : getConnectionsFrom(node)) {
+		conn.destination->position.x += dx;
+		conn.destination->position.y += dy;
+	}
+
+	// mode inputs
+	for (auto&& conn : getConnectionsTo(node)) {
+		conn.source->position.x += dx;
+		conn.source->position.y += dy;
+	}
+}
+
 void NodeEditor::onMouseMove(int x, int y, int dx, int dy) {
 	m_mousePos.x = x;
 	m_mousePos.y = y;
@@ -199,13 +240,31 @@ void NodeEditor::onMouseMove(int x, int y, int dx, int dy) {
 		VisualNode* node = get(m_selectedNode);
 		if (!node) return;
 
-		node->position.x += dx;
-		node->position.y += dy;
+		// Move nodes connected to this node output
+		if (m_shiftPressed) {
+			moveNodeTree(node, dx, dy);
+		}
+		else {
+			node->position.x += dx;
+			node->position.y += dy;
+		}
 	}
 }
 
 void NodeEditor::onMouseLeave() {
 	m_state = NodeEditorState::idling;
+}
+
+void NodeEditor::onKeyPress(int key) {
+	if (key == VK_SHIFT) {
+		m_shiftPressed = true;
+	}
+}
+
+void NodeEditor::onKeyRelease(int key) {
+	if (key == VK_SHIFT) {
+		m_shiftPressed = false;
+	}
 }
 
 Rect VisualNode::getOutputRect(size_t index) {

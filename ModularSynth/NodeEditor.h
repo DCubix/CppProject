@@ -78,6 +78,9 @@ public:
 	void onMouseMove(int x, int y, int dx, int dy) override;
 	void onMouseLeave() override;
 
+	void onKeyPress(int key) override;
+	void onKeyRelease(int key) override;
+
 	template <NodeObject U, VisualNodeObject T = VisualNode>
 	T* create(const std::string& name, const std::string& code, Color color) {
 		T* instance = new T();
@@ -128,6 +131,12 @@ private:
 	Point m_mousePos{ 0, 0 };
 
 	void rebuildDrawOrder();
+
+	std::vector<VisualConnection> getConnectionsTo(VisualNode* node);
+	std::vector<VisualConnection> getConnectionsFrom(VisualNode* node);
+	void moveNodeTree(VisualNode* node, int dx, int dy);
+
+	bool m_shiftPressed{ false };
 
 	static size_t g_NodeID;
 };

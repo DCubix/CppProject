@@ -160,11 +160,19 @@ layout (rgba8, binding=0) uniform image2D bOutput;
 //}
 
 #define Tex(name, uv) imageLoad(name, ivec2(uv * vec2(imageSize(name).xy)))
+#define PI 3.141592654
 
+float rand(float n) { return fract(sin(n) * 43758.5453123); }
+float rand(vec2 n) { 
+	return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+}
+<defs>
 
 vec4 mainFunc(vec2 cUV) {
 #line 0
 	)";
+
+	src.replace(src.find("<defs>"), 6, definitions());
 
 	src += source();
 	src += "\n}";

@@ -1,7 +1,5 @@
 #include "RadioSelector.h"
 
-constexpr float dur = 0.08f;
-
 static void drawButton(
 	NVGcontext* ctx,
 	const std::string& text,

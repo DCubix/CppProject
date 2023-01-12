@@ -76,7 +76,7 @@ public:
 		gui->addControl(pnl);
 
 		NodeEditor* ned = new NodeEditor();
-		ned->bounds = { 270, 12, int(app.window().size().first) - 282, int(app.window().size().second) - 24 };
+		ned->bounds = { 340, 12, int(app.window().size().first) - 352, int(app.window().size().second) - 24 };
 		gui->addControl(ned);
 
 		ned->onSelect = [=](VisualNode* node) {
@@ -97,8 +97,9 @@ public:
 		auto col2 = createNewTextureNode(ned, "COL");
 		((GraphicsNode*)col2->node())->setParam("Color", { 0.0f, 1.0f, 0.0f, 1.0f });
 
-		auto sgr = createNewTextureNode(ned, "SGR");
-		auto mix = createNewTextureNode(ned, "MIX");
+		createNewTextureNode(ned, "NOI");
+		createNewTextureNode(ned, "MIX");
+		createNewTextureNode(ned, "THR");
 
 		//ned->connect(col1, 0, mix, 0);
 		//ned->connect(col2, 0, mix, 1);
@@ -106,7 +107,7 @@ public:
 
 		/* --------- */
 
-		pnl->bounds = { 12, 12, 250, int(app.window().size().second) - 24 };
+		pnl->bounds = { 12, 12, 320, int(app.window().size().second) - 24 };
 	}
 
 	void onUpdate(Application& app, float dt) {

@@ -7,6 +7,7 @@
 #include "Slider.h"
 #include "Panel.h"
 #include "Label.h"
+#include "RadioSelector.h"
 
 #define hex2rgbf(h) { float((h & 0xFF0000) >> 16) / 255.0f, float((h & 0xFF00) >> 8) / 255.0f, float(h & 0xFF) / 255.0f, 1.0f }
 
@@ -36,6 +37,48 @@ struct NodeContructor {
 
 #define NodeCtor(T, c) [](NodeEditor* editor, const std::string& name, const std::string& code) { return editor->create<T, VisualTextureNode>(name, code, c); }
 
+static Control* gui_ValueSlider(
+	GUISystem* gui,
+	const std::string& label,
+	float value,
+	const std::function<void(float)> setter,
+	float min = 0.0f,
+	float max = 1.0f,
+	float step = 0.05f
+) {
+	Slider* sld = new Slider();
+	gui->addControl(sld);
+
+	sld->min = min;
+	sld->max = max;
+	sld->step = step;
+
+	sld->value = value;
+	sld->onChange = [=](float v) {
+		setter(v);
+	};
+
+	Label* lbl = new Label();
+	lbl->text = label;
+	lbl->alignment = HorizontalAlignment::right;
+	gui->addControl(lbl);
+
+	Panel* row = new Panel();
+	row->drawBackground(false);
+	row->bounds = { 0, 0, 0, 30 };
+
+	RowLayout* rl = new RowLayout(2, 3);
+	rl->expansion[0] = 0.7f;
+	rl->expansion[1] = 1.3f;
+
+	row->setLayout(rl);
+	row->addChild(lbl);
+	row->addChild(sld);
+
+	gui->addControl(row);
+	return row;
+}
+
 static Control* gui_ColorNode(GUISystem* gui, VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
@@ -47,36 +90,13 @@ static Control* gui_ColorNode(GUISystem* gui, VisualNode* node) {
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 	for (size_t i = 0; i < 4; i++) {
-		Slider* sld = new Slider();
-		gui->addControl(sld);
-
-		sld->value = nd->param("Color").value[i];
-		sld->onChange = [=](float v) {
-			nd->setParam("Color", i, v);
-		};
-
-		Label* lbl = new Label();
-		lbl->text = labels[i];
-		lbl->alignment = HorizontalAlignment::right;
-		gui->addControl(lbl);
-
-		Panel* row = new Panel();
-		row->drawBackground(false);
-		row->bounds = { 0, 0, 0, 30 };
-
-		RowLayout* rl = new RowLayout(2, 3);
-		rl->expansion[0] = 0.5f;
-		rl->expansion[1] = 1.5f;
-
-		row->setLayout(rl);
-
-		gui->addControl(row);
-
-		row->addChild(lbl);
-		row->addChild(sld);
-
-		pnl->addChild(row);
-
+		auto ctrl = gui_ValueSlider(
+			gui, labels[i], nd->param("Color").value[i],
+			[=](float v) {
+				nd->setParam("Color", i, v);
+			}
+		);
+		pnl->addChild(ctrl);
 		pnl->bounds.height += 30;
 	}
 
@@ -86,27 +106,33 @@ static Control* gui_ColorNode(GUISystem* gui, VisualNode* node) {
 static Control* gui_MixNode(GUISystem* gui, VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
-	pnl->bounds = { 0, 0, 0, 60 };
+	pnl->bounds = { 0, 0, 0, 90 };
 	pnl->setLayout(new ColumnLayout());
 	gui->addControl(pnl);
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
-	Slider* sld = new Slider();
-	gui->addControl(sld);
 
-	Label* lbl = new Label();
-	lbl->text = "Factor";
-	lbl->bounds = { 0, 0, 0, 18 };
-	gui->addControl(lbl);
-
-	sld->value = nd->param("Factor").value[0];
-	sld->onChange = [=](float v) {
-		nd->setParam("Factor", v);
+	RadioSelector* rsel = new RadioSelector();
+	rsel->bounds = { 0, 0, 0, 34 };
+	rsel->addOption(0, "Mix");
+	rsel->addOption(1, "Add");
+	rsel->addOption(2, "Sub");
+	rsel->addOption(3, "Mul");
+	rsel->select(int(nd->param("Mode").value[0]));
+	rsel->onSelect = [=](int index) {
+		nd->setParam("Mode", float(index));
 	};
-	sld->bounds = { 0, 0, 0, 30 };
+	gui->addControl(rsel);
 
-	pnl->addChild(lbl);
-	pnl->addChild(sld);
+	auto ctrl = gui_ValueSlider(
+		gui, "Factor", nd->param("Factor").value[0],
+		[=](float v) {
+			nd->setParam("Factor", v);
+		}
+	);
+
+	pnl->addChild(rsel);
+	pnl->addChild(ctrl);
 
 	return pnl;
 }
@@ -141,10 +167,83 @@ static Control* gui_SimpleGradientNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
+static Control* gui_NoiseNode(GUISystem* gui, VisualNode* node) {
+	Panel* pnl = new Panel();
+	pnl->drawBackground(false);
+	pnl->bounds = { 0, 0, 0, 60 };
+	pnl->setLayout(new ColumnLayout());
+	gui->addControl(pnl);
+
+	GraphicsNode* nd = (GraphicsNode*)node->node();
+
+	auto scale = gui_ValueSlider(
+		gui, "Scale", nd->param("Scale").value[0],
+		[=](float v) {
+			nd->setParam("Scale", v);
+		},
+		1.0f, 99.0f
+	);
+	auto patx = gui_ValueSlider(
+		gui, "Pattern X", nd->param("Pattern X").value[0],
+		[=](float v) {
+			nd->setParam("Pattern X", v);
+		}
+	);
+	auto paty = gui_ValueSlider(
+		gui, "Pattern Y", nd->param("Pattern Y").value[0],
+		[=](float v) {
+			nd->setParam("Pattern Y", v);
+		}
+	);
+
+	gui->addControl(scale);
+	gui->addControl(patx);
+	gui->addControl(paty);
+
+	pnl->addChild(scale);
+	pnl->addChild(patx);
+	pnl->addChild(paty);
+
+	return pnl;
+}
+
+static Control* gui_ThresholdNode(GUISystem* gui, VisualNode* node) {
+	Panel* pnl = new Panel();
+	pnl->drawBackground(false);
+	pnl->bounds = { 0, 0, 0, 60 };
+	pnl->setLayout(new ColumnLayout());
+	gui->addControl(pnl);
+
+	GraphicsNode* nd = (GraphicsNode*)node->node();
+
+	auto thr = gui_ValueSlider(
+		gui, "Threshold", nd->param("Threshold").value[0],
+		[=](float v) {
+			nd->setParam("Threshold", v);
+		}
+	);
+	auto feat = gui_ValueSlider(
+		gui, "Feather", nd->param("Feather").value[0],
+		[=](float v) {
+			nd->setParam("Feather", v);
+		}
+	);
+
+	gui->addControl(thr);
+	gui->addControl(feat);
+
+	pnl->addChild(thr);
+	pnl->addChild(feat);
+
+	return pnl;
+}
+
 static NodeContructor nodeTypes[] = {
 	{ "COL", "Color", NodeCtor(ColorNode, generatorNodeColor), gui_ColorNode },
 	{ "MIX", "Mix", NodeCtor(MixNode, operatorNodeColor), gui_MixNode },
 	{ "SGR", "Simple Gradient", NodeCtor(SimpleGradientNode, generatorNodeColor), gui_SimpleGradientNode },
+	{ "NOI", "Noise", NodeCtor(NoiseNode, generatorNodeColor), gui_NoiseNode },
+	{ "THR", "Threshold", NodeCtor(ThresholdNode, operatorNodeColor), gui_ThresholdNode },
 	{ "", "", nullptr, nullptr }
 };
 

@@ -10,6 +10,7 @@
 class GraphicsNode : public Node {
 public:
 	virtual std::string source() = 0;
+	virtual std::string definitions() { return ""; }
 	virtual void onCreate() = 0;
 
 	void setup() override final;
@@ -47,7 +48,7 @@ public:
 
 	const std::map<std::string, NodeValue>& params() { return m_params; }
 
-private:
+protected:
 	std::unique_ptr<Texture> m_texture;
 	std::unique_ptr<Shader> m_shader;
 	

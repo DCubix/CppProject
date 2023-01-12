@@ -6,6 +6,8 @@
 #include <map>
 #include <string>
 
+constexpr float dur = 0.08f;
+
 class RadioSelector : public Control {
 public:
 	void onDraw(NVGcontext* ctx, float deltaTime);
@@ -15,7 +17,12 @@ public:
 	void onMouseLeave() override;
 	
 	int selected() const { return m_selectedValue; }
-	void select(int value) { m_selectedValue = value; }
+	void select(int value) {
+		m_clickAnimators[m_selectedValue].reverse(dur);
+		m_selectedValue = value;
+		m_clickAnimators[m_selectedValue].forward(1.0f, 0.0f, dur);
+		m_hoverAnimators[m_selectedValue].reset();
+	}
 
 	void addOption(int value, const std::string& description);
 
