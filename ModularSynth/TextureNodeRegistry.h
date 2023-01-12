@@ -8,11 +8,17 @@
 #include "Panel.h"
 #include "Label.h"
 #include "RadioSelector.h"
+#include "Button.h"
+
+#include "portable-file-dialogs.h"
+
+#include "nanovg/stb_image.h"
 
 #define hex2rgbf(h) { float((h & 0xFF0000) >> 16) / 255.0f, float((h & 0xFF00) >> 8) / 255.0f, float(h & 0xFF) / 255.0f, 1.0f }
 
 static constexpr Color generatorNodeColor = hex2rgbf(0x47b394);
 static constexpr Color operatorNodeColor = hex2rgbf(0xb86335);
+static constexpr Color externalNodeColor = hex2rgbf(0x7a30ba);
 
 class VisualTextureNode : public VisualNode {
 public:
@@ -113,7 +119,7 @@ static Control* gui_MixNode(GUISystem* gui, VisualNode* node) {
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 
 	RadioSelector* rsel = new RadioSelector();
-	rsel->bounds = { 0, 0, 0, 34 };
+	rsel->bounds = { 0, 0, 0, 25 };
 	rsel->addOption(0, "Mix");
 	rsel->addOption(1, "Add");
 	rsel->addOption(2, "Sub");
@@ -238,12 +244,79 @@ static Control* gui_ThresholdNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
+static Control* gui_ImageNode(GUISystem* gui, VisualNode* node) {
+	Button* btn = new Button();
+	btn->text = "Load Texture";
+
+	ImageNode* nd = (ImageNode*)node->node();
+	
+	btn->bounds = { 0, 0, 0, 25 };
+	btn->onPress = [=]() {
+		auto fp = pfd::open_file(
+			"Load Image",
+			pfd::path::home(),
+			{ "Image Files", "*.png *.jpg *.bmp" },
+			pfd::opt::none
+		);
+		if (!fp.result().empty()) {
+			if (nd->handle) {
+				delete nd->handle;
+			}
+
+			int w, h, comp;
+			auto data = stbi_load(fp.result().front().c_str(), &w, &h, &comp, STBI_rgb_alpha);
+
+			nd->handle = new Texture({ uint32_t(w), uint32_t(h) }, GL_RGBA8);
+			nd->handle->loadFromMemory(data, GL_RGBA, GL_UNSIGNED_BYTE);
+
+			nd->setParam("Image", float(nd->handle->id()));
+		}
+	};
+	gui->addControl(btn);
+	return btn;
+}
+
+static Control* gui_UVNode(GUISystem* gui, VisualNode* node) {
+	Panel* pnl = new Panel();
+	pnl->drawBackground(false);
+	pnl->bounds = { 0, 0, 0, 60 };
+	pnl->setLayout(new ColumnLayout());
+	gui->addControl(pnl);
+
+	GraphicsNode* nd = (GraphicsNode*)node->node();
+
+	RadioSelector* rsel = new RadioSelector();
+	rsel->bounds = { 0, 0, 0, 25 };
+	rsel->addOption(0, "Clamp");
+	rsel->addOption(1, "Repeat");
+	rsel->addOption(2, "Mirror");
+	rsel->select(int(nd->param("Repeat").value[0]));
+	rsel->onSelect = [=](int index) {
+		nd->setParam("Repeat", float(index));
+	};
+	gui->addControl(rsel);
+
+	auto ctrl = gui_ValueSlider(
+		gui, "Strength", nd->param("Strength").value[0],
+		[=](float v) {
+			nd->setParam("Strength", v);
+		}
+	);
+
+	pnl->addChild(rsel);
+	pnl->addChild(ctrl);
+
+	return pnl;
+}
+
 static NodeContructor nodeTypes[] = {
 	{ "COL", "Color", NodeCtor(ColorNode, generatorNodeColor), gui_ColorNode },
 	{ "MIX", "Mix", NodeCtor(MixNode, operatorNodeColor), gui_MixNode },
 	{ "SGR", "Simple Gradient", NodeCtor(SimpleGradientNode, generatorNodeColor), gui_SimpleGradientNode },
 	{ "NOI", "Noise", NodeCtor(NoiseNode, generatorNodeColor), gui_NoiseNode },
 	{ "THR", "Threshold", NodeCtor(ThresholdNode, operatorNodeColor), gui_ThresholdNode },
+	{ "IMG", "Image", NodeCtor(ImageNode, externalNodeColor), gui_ImageNode },
+	{ "UVS", "UV", NodeCtor(UVNode, generatorNodeColor), gui_UVNode },
 	{ "", "", nullptr, nullptr }
 };
 

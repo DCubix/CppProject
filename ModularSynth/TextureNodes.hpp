@@ -201,3 +201,81 @@ public:
 	}
 
 };
+
+#include <fstream>
+
+class ImageNode : public GraphicsNode {
+public:
+	std::string source() {
+		return R"(
+			vec2 uv = cUV;
+			if (uInUvConnected) {
+				uv = Tex(uInUv, cUV).rg;
+			}
+			return Tex(uParamImage, uv);
+		)";
+	}
+
+	void onCreate() {
+		// TODO: How to maintain the same size accross nodes?
+		outputWidth = 512;
+		outputHeight = 512;
+
+		addInput("UV", NodeValueType::image);
+		addParam("Image", NodeValueType::image);
+	}
+
+	Texture* handle;
+
+};
+
+class UVNode : public GraphicsNode {
+public:
+	std::string definitions() override {
+		return R"(vec2 mirrored(vec2 v) {
+			vec2 m = mod(v, 2.0);
+			return mix(m, 2.0 - m, step(1.0, m));
+		})";
+	}
+
+	std::string source() {
+		return R"(
+			vec2 duv = cUV;
+			if (uInDeformConnected) {
+				vec2 s = 1.0 / vec2(imageSize(uInDeform));
+        
+				float p  = Tex(uInDeform, cUV).x;
+				float h1 = Tex(uInDeform, cUV + s * vec2(1.0, 0.0)).x;
+				float v1 = Tex(uInDeform, cUV + s * vec2(0.0, 1.0)).x;
+      
+   				vec2 n = (p - vec2(h1, v1));
+    
+				duv = cUV + ((n * 2.0 - 1.0) * uParamStrength);
+			}
+
+			if (uParamRepeat == 0.0) { // clamp to edge
+				duv = clamp(duv, 0.0, 1.0);
+			} else if (uParamRepeat == 1.0) { // repeat
+				duv = mod(duv, 1.0);
+			} else if (uParamRepeat == 2.0) { // mirror
+				duv = mirrored(duv);
+			}
+
+			return vec4(duv, 0.0, 1.0);
+		)";
+	}
+
+	void onCreate() {
+		// TODO: How to maintain the same size accross nodes?
+		outputWidth = 512;
+		outputHeight = 512;
+
+		addInput("Deform", NodeValueType::image);
+		addParam("Repeat", NodeValueType::float1);
+		addParam("Strength", NodeValueType::float1);
+		setParam("Strength", 1.0f);
+	}
+
+	Texture* handle;
+
+};

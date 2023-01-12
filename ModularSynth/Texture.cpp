@@ -34,13 +34,13 @@ void Texture::init(size_t dimensions) {
 	}
 
 	if (dimensions >= 1) {
-		glTextureParameteri(m_id, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_id, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	}
-	else if (dimensions >= 2) {
-		glTextureParameteri(m_id, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	if (dimensions >= 2) {
+		glTextureParameteri(m_id, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
-	else if (dimensions >= 3) {
-		glTextureParameteri(m_id, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	if (dimensions >= 3) {
+		glTextureParameteri(m_id, GL_TEXTURE_WRAP_R, GL_REPEAT);
 	}
 
 	// TODO: Set filter

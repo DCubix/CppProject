@@ -67,23 +67,19 @@ NodeValue GraphicsNode::solve() {
 	glBindImageTexture(0, m_texture->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA8);
 	glUseProgram(m_shader->id());
 
+	size_t binding = 1;
 	for (size_t i = 0; i < m_inputs.size(); i++) {
 		NodeValue& nv = m_inputs[i];
-		if (nv.type == NodeValueType::image) {
-			m_shader->uniformInt<1>(std::format("uIn{}Connected", toCorrectCase(m_inputNames[i])), { nv.connected ? 1 : 0 });
-		}
+
+		m_shader->uniformInt<1>(std::format("uIn{}Connected", toCorrectCase(m_inputNames[i])), { nv.connected ? 1 : 0 });
+
 		std::string name = std::format("uIn{}", toCorrectCase(m_inputNames[i]));
-		setUniformNodeValue(m_shader.get(), name, nv, i+1);
+		setUniformNodeValue(m_shader.get(), name, nv, binding++);
 	}
 
-	size_t i = 0;
 	for (auto&& [paramName, nv] : m_params) {
-		if (nv.type == NodeValueType::image) {
-			m_shader->uniformInt<1>(std::format("uParam{}Connected", toCorrectCase(m_inputNames[i])), { nv.connected ? 1 : 0 });
-		}
 		std::string name = std::format("uParam{}", toCorrectCase(paramName));
-		setUniformNodeValue(m_shader.get(), name, nv, i+1);
-		i++;
+		setUniformNodeValue(m_shader.get(), name, nv, binding++);
 	}
 
 	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -109,6 +105,7 @@ layout (rgba8, binding=0) uniform image2D bOutput;
 <images>
 )";
 
+	size_t binding = 1;
 	for (size_t i = 0; i < m_inputs.size(); i++) {
 		NodeValue& nv = m_inputs[i];
 		auto name = toCorrectCase(m_inputNames[i]);
@@ -119,17 +116,17 @@ layout (rgba8, binding=0) uniform image2D bOutput;
 			case NodeValueType::float3: src += std::format("uniform vec3 uIn{};", name); break;
 			case NodeValueType::float4: src += std::format("uniform vec4 uIn{};", name); break;
 			case NodeValueType::image:
-				images += std::format("layout (rgba8, binding={}) uniform image2D uIn{};\n", i + 1, name);
-				src += std::format("uniform bool uIn{}Connected;", toCorrectCase(name));
+				images += std::format("layout (rgba8, binding={}) uniform image2D uIn{};\n", binding, name);
 			break;
 		}
+		src += std::format("uniform bool uIn{}Connected;", toCorrectCase(name));
 
 		src += "\n";
+		binding++;
 	}
 
 	src += "\n";
 
-	size_t i = 0;
 	for (auto&& [ paramName, nv ] : m_params) {
 		auto name = toCorrectCase(paramName);
 
@@ -139,13 +136,12 @@ layout (rgba8, binding=0) uniform image2D bOutput;
 			case NodeValueType::float3: src += std::format("uniform vec3 uParam{};", name); break;
 			case NodeValueType::float4: src += std::format("uniform vec4 uParam{};", name); break;
 			case NodeValueType::image:
-				images += std::format("layout (rgba8, binding={}) uniform image2D uParam{};\n", i + 1, name);
-				src += std::format("uniform bool uParam{}Connected;", toCorrectCase(name));
+				images += std::format("layout (rgba8, binding={}) uniform image2D uParam{};\n", binding, name);
 				break;
 		}
 
 		src += "\n";
-		i++;
+		binding++;
 	}
 
 	src.replace(src.find("<images>"), 8, images);
@@ -158,6 +154,14 @@ layout (rgba8, binding=0) uniform image2D bOutput;
 //	ivec2 pc = ivec2(uv * sz);
 //	return imageLoad(img, pc);
 //}
+
+float fmod(float x, float y) {
+	return x - y * trunc(x / y);
+}
+
+vec2 fmod(vec2 x, float y) {
+	return vec2(fmod(x.x, y), fmod(x.y, y));
+}
 
 #define Tex(name, uv) imageLoad(name, ivec2(uv * vec2(imageSize(name).xy)))
 #define PI 3.141592654

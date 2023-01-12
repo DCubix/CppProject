@@ -101,6 +101,9 @@ public:
 		createNewTextureNode(ned, "NOI");
 		createNewTextureNode(ned, "MIX");
 		createNewTextureNode(ned, "THR");
+		createNewTextureNode(ned, "IMG");
+		createNewTextureNode(ned, "IMG");
+		createNewTextureNode(ned, "UVS");
 
 		//ned->connect(col1, 0, mix, 0);
 		//ned->connect(col2, 0, mix, 1);

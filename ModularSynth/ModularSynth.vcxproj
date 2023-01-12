@@ -214,6 +214,7 @@
     <ClInclude Include="NodeEditor.h" />
     <ClInclude Include="NodeGraph.h" />
     <ClInclude Include="Panel.h" />
+    <ClInclude Include="portable-file-dialogs.h" />
     <ClInclude Include="RadioSelector.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="Slider.h" />
