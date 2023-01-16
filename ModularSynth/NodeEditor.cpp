@@ -32,8 +32,9 @@ static void beginConnection(NVGcontext* ctx, Point a, Point b) {
 	}
 }
 
-NodeEditor::NodeEditor() {
-	m_graph = std::make_unique<NodeGraph>();
+NodeEditor::NodeEditor(NodeGraph* graph) {
+	if (!graph) m_graph = std::make_unique<NodeGraph>();
+	else m_graph = std::unique_ptr<NodeGraph>(graph);
 }
 
 void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {

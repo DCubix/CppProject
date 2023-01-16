@@ -7,22 +7,25 @@
 #include <memory>
 #include <map>
 
+constexpr uint32_t previewSize = 128;
+
+std::string toCamelCase(const std::string& text);
+
 class GraphicsNode : public Node {
 public:
-	virtual std::string source() = 0;
-	virtual std::string definitions() { return ""; }
+	virtual std::string functionName() = 0;
+	virtual std::string library() = 0;
+	virtual std::map<std::string, std::string> parameters() = 0;
 	virtual void onCreate() = 0;
 
 	void setup() override final;
 	NodeValue solve();
 
-	uint32_t outputWidth, outputHeight;
-
-	void addParam(const std::string& name, NodeValueType type);
+	void addParam(const std::string& name, ValueType type);
 
 	const NodeValue& param(const std::string& name) { return m_params[name]; }
 
-	void setParam(const std::string& name, const RawNodeValue& value) { m_params[name].value = value; m_changed = true; }
+	void setParam(const std::string& name, const RawValue& value) { m_params[name].value = value; m_changed = true; }
 	void setParam(const std::string& name, float v) { m_params[name].value[0] = v; m_changed = true; }
 	void setParam(const std::string& name, float x, float y) {
 		m_params[name].value[0] = x;
@@ -44,7 +47,9 @@ public:
 	}
 	void setParam(const std::string& name, size_t index, float v) { m_params[name].value[index] = v; m_changed = true; }
 
-	GLuint textureID() const { return m_texture->id(); }
+	bool hasParam(const std::string& name) { return m_params.find(name) != m_params.end(); }
+
+	GLuint textureID() const { return m_texture ? m_texture->id() : 0; }
 
 	const std::map<std::string, NodeValue>& params() { return m_params; }
 

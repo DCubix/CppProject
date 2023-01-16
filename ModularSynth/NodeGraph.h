@@ -6,19 +6,20 @@
 #include <cstdint>
 #include <memory>
 
-using RawNodeValue = std::array<float, 4>;
+using RawValue = std::array<float, 4>;
 
-enum class NodeValueType : size_t {
-	float1 = 1,
-	float2,
-	float3,
-	float4,
+enum class ValueType : size_t {
+	none = 0,
+	scalar,
+	vec2,
+	vec3,
+	vec4,
 	image
 };
 
 struct NodeValue {
-	RawNodeValue value{ 0.0f };
-	NodeValueType type;
+	RawValue value{ 0.0f };
+	ValueType type;
 	bool connected{ false };
 };
 
@@ -27,11 +28,12 @@ class Node {
 public:
 	virtual ~Node() = default;
 
-	size_t addInput(const std::string& name, NodeValueType type);
-	size_t addOutput(const std::string& name, NodeValueType type);
+	size_t addInput(const std::string& name, ValueType type);
+	size_t addOutput(const std::string& name, ValueType type);
 
 	NodeValue& output(size_t index);
 	NodeValue& input(size_t index);
+	NodeValue* input(const std::string& in);
 
 	virtual NodeValue solve() = 0;
 	virtual void setup() = 0;
@@ -40,8 +42,16 @@ public:
 	size_t outputCount() const { return m_outputs.size(); }
 	size_t inputCount() const { return m_inputs.size(); }
 
+	bool hasInput(const std::string& in) { return std::find(m_inputNames.begin(), m_inputNames.end(), in) != m_inputNames.end(); }
+	bool hasOutput(const std::string& out) { return std::find(m_outputNames.begin(), m_outputNames.end(), out) != m_outputNames.end(); }
+
 	const std::string& inputName(size_t index) const { return m_inputNames[index]; }
 	const std::string& outputName(size_t index) const { return m_outputNames[index]; }
+
+	size_t inputIndex(const std::string& in) {
+		auto pos = std::find(m_inputNames.begin(), m_inputNames.end(), in);
+		return std::distance(m_inputNames.begin(), pos);
+	}
 
 	bool changed() const { return m_changed; }
 
@@ -87,12 +97,12 @@ public:
 
 	void connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
 
-	void solve();
+	virtual void solve();
 	size_t lastNode() const { return m_nodePath.empty() ? 0 : m_nodePath.front(); }
 
 	bool hasChanges() const;
 
-private:
+protected:
 	std::vector<std::unique_ptr<Node>> m_nodes;
 	std::vector<Connection> m_connections;
 
@@ -107,6 +117,8 @@ private:
 	 */
 
 	std::vector<size_t> m_nodePath;
+
+	std::vector<Connection> getConnectionsToInput(Node* node, size_t input);
 
 	std::vector<Connection> getNodeInputConnections(Node* node);
 	std::vector<Connection> getNodeOutputConnections(Node* node);

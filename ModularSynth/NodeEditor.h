@@ -69,7 +69,7 @@ struct VisualConnection {
 
 class NodeEditor : public Control {
 public:
-	NodeEditor();
+	NodeEditor(NodeGraph* graph = nullptr);
 
 	void onDraw(NVGcontext* ctx, float deltaTime) override;
 

@@ -15,6 +15,9 @@
 
 #include "GraphicsNode.h"
 #include "TextureNodeRegistry.h"
+#include "TextureNodeGraph.hpp"
+
+#include "ShaderGen.h"
 
 #include "nanovg/nanovg.h"
 #define NANOVG_GL3_IMPLEMENTATION
@@ -76,7 +79,7 @@ public:
 		pnl->setLayout(new ColumnLayout());
 		gui->addControl(pnl);
 
-		NodeEditor* ned = new NodeEditor();
+		NodeEditor* ned = new NodeEditor(new TextureNodeGraph());
 		ned->bounds = { 340, 12, int(app.window().size().first) - 352, int(app.window().size().second) - 24 };
 		gui->addControl(ned);
 
@@ -95,15 +98,15 @@ public:
 		/* NODE TEST */
 		auto col1 = createNewTextureNode(ned, "COL");
 		((GraphicsNode*)col1->node())->setParam("Color", { 1.0f, 0.0f, 0.0f, 1.0f });
-		auto col2 = createNewTextureNode(ned, "COL");
-		((GraphicsNode*)col2->node())->setParam("Color", { 0.0f, 1.0f, 0.0f, 1.0f });
+		/*auto col2 = createNewTextureNode(ned, "COL");
+		((GraphicsNode*)col2->node())->setParam("Color", { 0.0f, 1.0f, 0.0f, 1.0f });*/
 
-		createNewTextureNode(ned, "NOI");
+		//createNewTextureNode(ned, "NOI");
 		createNewTextureNode(ned, "MIX");
-		createNewTextureNode(ned, "THR");
-		createNewTextureNode(ned, "IMG");
-		createNewTextureNode(ned, "IMG");
-		createNewTextureNode(ned, "UVS");
+		//createNewTextureNode(ned, "THR");
+		//createNewTextureNode(ned, "IMG");
+		//createNewTextureNode(ned, "IMG");
+		//createNewTextureNode(ned, "UVS");
 
 		//ned->connect(col1, 0, mix, 0);
 		//ned->connect(col2, 0, mix, 1);
@@ -157,6 +160,64 @@ public:
 };
 
 int main(int argc, char** argv) {
+#if 1
 	Application* app = new Application(new Test());
 	return app->run();
+#else
+
+	ShaderGen gen{};
+
+	std::string libTest = R"(void mix_blend(float fac, vec4 col1, vec4 col2, out vec4 outcol)
+{
+	fac = clamp(fac, 0.0, 1.0);
+	outcol = mix(col1, col2, fac);
+	outcol.a = col1.a;
+}
+
+void mix_add(float fac, vec4 col1, vec4 col2, out vec4 outcol)
+{
+	fac = clamp(fac, 0.0, 1.0);
+	outcol = mix(col1, col1 + col2, fac);
+	outcol.a = col1.a;
+}
+
+void mix_mult(float fac, vec4 col1, vec4 col2, out vec4 outcol)
+{
+	fac = clamp(fac, 0.0, 1.0);
+	outcol = mix(col1, col1 * col2, fac);
+	outcol.a = col1.a;
+}
+
+void mix_screen(float fac, vec4 col1, vec4 col2, out vec4 outcol)
+{
+	fac = clamp(fac, 0.0, 1.0);
+	float facm = 1.0 - fac;
+
+	outcol = vec4(1.0) - (vec4(facm) + fac * (vec4(1.0) - col2)) * (vec4(1.0) - col1);
+	outcol.a = col1.a;
+}
+
+void mix_hue(float fac, vec4 col1, vec4 col2, out vec4 outcol)
+{
+	fac = clamp(fac, 0.0, 1.0);
+	float facm = 1.0 - fac;
+
+	outcol = col1;
+
+	vec4 hsv, hsv2, tmp;
+	rgb_to_hsv(col2, hsv2);
+
+	if (hsv2.y != 0.0) {
+		rgb_to_hsv(outcol, hsv);
+		hsv.x = hsv2.x;
+		hsv_to_rgb(hsv, tmp);
+
+		outcol = mix(outcol, tmp, fac);
+		outcol.a = col1.a;
+	}
+}
+)";
+	gen.loadLib(libTest);
+#endif
+	return 0;
 }

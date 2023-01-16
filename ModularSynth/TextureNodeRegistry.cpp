@@ -10,7 +10,7 @@ void VisualTextureNode::onExtraDraw(NVGcontext* ctx, float dt) {
 
 	if (image == -1) {
 		GraphicsNode* gn = dynamic_cast<GraphicsNode*>(m_node);
-		image = nvglCreateImageFromHandleGL3(ctx, gn->textureID(), gn->outputWidth, gn->outputHeight, 0);
+		image = nvglCreateImageFromHandleGL3(ctx, gn->textureID(), previewSize, previewSize, 0);
 	}
 
 	Dimension sz = extraSize();

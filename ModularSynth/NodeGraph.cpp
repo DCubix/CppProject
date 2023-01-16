@@ -5,13 +5,13 @@
 
 size_t NodeGraph::g_NodeID = 1;
 
-size_t Node::addInput(const std::string& name, NodeValueType type) {
+size_t Node::addInput(const std::string& name, ValueType type) {
 	m_inputs.push_back({ .type = type });
 	m_inputNames.push_back(name);
 	return m_inputs.size() - 1;
 }
 
-size_t Node::addOutput(const std::string& name, NodeValueType type) {
+size_t Node::addOutput(const std::string& name, ValueType type) {
 	m_outputs.push_back({ .type = type });
 	m_outputNames.push_back(name);
 	return m_outputs.size() - 1;
@@ -23,6 +23,15 @@ NodeValue& Node::output(size_t index) {
 
 NodeValue& Node::input(size_t index) {
 	return m_inputs[index];
+}
+
+NodeValue* Node::input(const std::string& in) {
+	auto pos = std::find(m_inputNames.begin(), m_inputNames.end(), in);
+	if (pos == m_inputNames.end()) {
+		return nullptr;
+	}
+	auto dist = std::distance(m_inputNames.begin(), pos);
+	return &m_inputs[dist];
 }
 
 
@@ -87,6 +96,16 @@ std::vector<Connection> NodeGraph::getNodeOutputConnections(Node* node) {
 	std::vector<Connection> ret;
 	for (auto&& conn : m_connections) {
 		if (conn.source == node) {
+			ret.push_back(conn);
+		}
+	}
+	return ret;
+}
+
+std::vector<Connection> NodeGraph::getConnectionsToInput(Node* node, size_t input) {
+	std::vector<Connection> ret;
+	for (auto&& conn : m_connections) {
+		if (conn.destination == node && conn.destinationInput == input) {
 			ret.push_back(conn);
 		}
 	}

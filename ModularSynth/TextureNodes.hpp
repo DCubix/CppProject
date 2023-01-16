@@ -4,75 +4,108 @@
 
 class ColorNode : public GraphicsNode {
 public:
-	std::string source() {
-		return R"(
-			return uParamColor;
-		)";
+	std::string library() {
+		return R"(void gen_color(in vec4 color, out vec4 outColor) {
+	outColor = color;
+})";
+	}
+
+	std::string functionName() { return "gen_color"; }
+
+	std::map<std::string, std::string> parameters() {
+		return {
+			{ "color", "Color" }
+		};
 	}
 
 	void onCreate() {
-		// TODO: How to maintain the same size accross nodes?
-		outputWidth = 512;
-		outputHeight = 512;
-		addParam("Color", NodeValueType::float4);
+		addParam("Color", ValueType::vec4);
 	}
 
 };
 
 class SimpleGradientNode : public GraphicsNode {
 public:
-	std::string source() {
-		return R"(
-			float c = cos(uParamAngle);
-			float s = sin(uParamAngle);
-			mat2 mat = mat2(c, -s, s, c);
-			vec4 ca = vec4(0.0, 0.0, 0.0, 1.0);
-			vec4 cb = vec4(1.0, 1.0, 1.0, 1.0);
-			vec2 rotatedUV = (mat * (cUV * 2.0 - 1.0)) * 0.5 + 0.5;
-			return mix(ca, cb, clamp(rotatedUV.x, 0.0, 1.0));
-		)";
+	std::string library() {
+		return R"(void gen_simple_gradient(vec2 uv, float angle, out vec4 outColor) {
+	float c = cos(angle);
+	float s = sin(angle);
+	mat2 mat = mat2(c, -s, s, c);
+	vec4 ca = vec4(0.0, 0.0, 0.0, 1.0);
+	vec4 cb = vec4(1.0, 1.0, 1.0, 1.0);
+	vec2 rotatedUV = (mat * (uv * 2.0 - 1.0)) * 0.5 + 0.5;
+	outColor = mix(ca, cb, clamp(rotatedUV.x, 0.0, 1.0));
+})";
+	}
+
+	std::string functionName() { return "gen_simple_gradient"; }
+
+	std::map<std::string, std::string> parameters() {
+		return {
+			{ "uv", "cUV" },
+			{ "angle", "Angle" }
+		};
 	}
 
 	void onCreate() {
-		// TODO: How to maintain the same size accross nodes?
-		outputWidth = 512;
-		outputHeight = 512;
-		addParam("Angle", NodeValueType::float1);
+		addParam("Angle", ValueType::scalar);
 	}
 };
 
 class MixNode : public GraphicsNode {
 public:
-	std::string source() {
-		return R"(
-			vec4 va = Tex(uInA, cUV);
-			vec4 vb = Tex(uInB, cUV);
-			float vf = uParamFactor;
-			if (uInFactorConnected) {
-				vf *= dot(Tex(uInFactor, cUV).rgb, vec3(0.299, 0.587, 0.114));
-			}
+	std::string library() {
+		return R"(void opr_mix_blend(float fac, vec4 ca, vec4 cb, out vec4 outColor) {
+	outColor = mix(ca, cb, clamp(fac, 0.0, 1.0));
+	outColor.a = ca.a;
+}
 
-			if (uParamMode == 1.0) { // Add
-				return vec4(va.rgb + (vb.rgb * vf), 1.0);
-			} else if (uParamMode == 2.0) { // Sub
-				return clamp(vec4(va.rgb - (vb.rgb * vf), 1.0), vec4(0.0), vec4(1.0));
-			} else if (uParamMode == 3.0) { // Multiply
-				return vec4(va.rgb * (vb.rgb * vf), 1.0);
-			}
+void opr_mix_add(float fac, vec4 ca, vec4 cb, out vec4 outColor) {
+	outColor = mix(ca, ca + cb, clamp(fac, 0.0, 1.0));
+	outColor.a = ca.a;
+})
 
-			return mix(va, vb, vf);
-		)";
+void opr_mix_sub(float fac, vec4 ca, vec4 cb, out vec4 outColor) {
+	outColor = mix(ca, ca - cb, clamp(fac, 0.0, 1.0));
+	outColor.a = ca.a;
+})
+
+void opr_mix_mul(float fac, vec4 ca, vec4 cb, out vec4 outColor) {
+	outColor = mix(ca, ca * cb, clamp(fac, 0.0, 1.0));
+	outColor.a = ca.a;
+}
+
+void opr_mix(float fac, float op, vec4 ca, vec4 cb, out vec4 outColor) {
+	if (op == 1.0) { // Add
+		opr_mix_add(fac, ca, cb, outColor);
+	} else if (op == 2.0) { // Sub
+		opr_mix_sub(fac, ca, cb, outColor);
+	} else if (op == 3.0) { // Multiply
+		opr_mix_mul(fac, ca, cb, outColor);
+	} else {
+		opr_mix_blend(fac, ca, cb, outColor);
+	}
+}
+)";
+	}
+
+	std::string functionName() { return "opr_mix"; }
+
+	std::map<std::string, std::string> parameters() {
+		return {
+			{ "fac", "Factor" },
+			{ "op", "Mode" },
+			{ "ca", "A" },
+			{ "cb", "B" }
+		};
 	}
 
 	void onCreate() {
-		// TODO: How to maintain the same size accross nodes?
-		outputWidth = 512;
-		outputHeight = 512;
-		addInput("A", NodeValueType::image);
-		addInput("B", NodeValueType::image);
-		addInput("Factor", NodeValueType::image);
-		addParam("Factor", NodeValueType::float1);
-		addParam("Mode", NodeValueType::float1);
+		addInput("A", ValueType::vec4);
+		addInput("B", ValueType::vec4);
+		addInput("Factor", ValueType::scalar);
+		addParam("Factor", ValueType::scalar);
+		addParam("Mode", ValueType::scalar);
 		setParam("Factor", 0.5f);
 		setParam("Mode", 0.0f);
 	}
@@ -81,94 +114,96 @@ public:
 
 class NoiseNode : public GraphicsNode {
 public:
-	std::string source() {
-		return R"(
-			return vec4(vec3(iqnoise(uParamScale * cUV, uParamPatternX, uParamPatternY)), 1.0);
-		)";
+	std::string functionName() { return "gen_noise"; }
+
+	std::string library() {
+		return R"(void noise(vec2 n, out float res) {
+	const vec2 d = vec2(0.0, 1.0);
+	vec2 b = floor(n), f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
+	res = mix(mix(rand(b), rand(b + d.yx), f.x), mix(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
+}
+
+void noise(vec2 p, float freq, out float res) {
+	float unit = 1.0 / freq;
+	vec2 ij = floor(p / unit);
+	vec2 xy = mod(p, unit) / unit;
+	xy = 0.5*(1.-cos(PI*xy));
+	float a = rand((ij+vec2(0.0,0.0)));
+	float b = rand((ij+vec2(1.0,0.0)));
+	float c = rand((ij+vec2(0.0,1.0)));
+	float d = rand((ij+vec2(1.0,1.0)));
+	float x1 = mix(a, b, xy.x);
+	float x2 = mix(c, d, xy.x);
+	res = mix(x1, x2, xy.y);
+}
+
+void pNoise(vec2 p, int res, out float outValue){
+	float persistance = 0.5;
+	float n = 0.0;
+	float normK = 0.0;
+	float f = 4.0;
+	float amp = 1.0;
+	int iCount = 0;
+	for (int i = 0; i < 50; i++){
+		n+=amp*noise(p, f);
+		f*=2.;
+		normK+=amp;
+		amp*=persistance;
+		if (iCount == res) break;
+		iCount++;
+	}
+	float nf = n/normK;
+	outValue = nf*nf*nf*nf;
+}
+
+void hash3(vec2 p, out vec3 res) {
+	vec3 q = vec3(dot(p,vec2(127.1,311.7)), 
+					dot(p,vec2(269.5,183.3)), 
+					dot(p,vec2(419.2,371.9)));
+	res = fract(sin(q)*43758.5453);
+}
+
+void iqnoise(vec2 x, float u, float v, out float res) {
+	vec2 p = floor(x);
+	vec2 f = fract(x);
+		
+	float k = 1.0+63.0*pow(1.0-v,4.0);
+	
+	float va = 0.0;
+	float wt = 0.0;
+	for( int j=-2; j<=2; j++ )
+	for( int i=-2; i<=2; i++ )
+	{
+		vec2 g = vec2( float(i),float(j) );
+		vec3 o = hash3( p + g )*vec3(u,u,1.0);
+		vec2 r = g - f + o.xy;
+		float d = dot(r,r);
+		float ww = pow( 1.0-smoothstep(0.0,1.414,sqrt(d)), k );
+		va += o.z*ww;
+		wt += ww;
+	}
+	
+	res = va/wt;
+}
+
+void gen_noise(in vec2 uv, float scale, float patternX, float patternY, out float res) {
+	iqnoise(uv * scale, patternX, patternY, res);
+})";
 	}
 
-	std::string definitions() override {
-		return R"(
-		float noise(vec2 n) {
-			const vec2 d = vec2(0.0, 1.0);
-			vec2 b = floor(n), f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
-			return mix(mix(rand(b), rand(b + d.yx), f.x), mix(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
-		}
-
-		float noise(vec2 p, float freq) {
-			float unit = 1.0 / freq;
-			vec2 ij = floor(p / unit);
-			vec2 xy = mod(p, unit) / unit;
-			xy = 0.5*(1.-cos(PI*xy));
-			float a = rand((ij+vec2(0.0,0.0)));
-			float b = rand((ij+vec2(1.0,0.0)));
-			float c = rand((ij+vec2(0.0,1.0)));
-			float d = rand((ij+vec2(1.0,1.0)));
-			float x1 = mix(a, b, xy.x);
-			float x2 = mix(c, d, xy.x);
-			return mix(x1, x2, xy.y);
-		}
-
-		float pNoise(vec2 p, int res){
-			float persistance = 0.5;
-			float n = 0.0;
-			float normK = 0.0;
-			float f = 4.0;
-			float amp = 1.0;
-			int iCount = 0;
-			for (int i = 0; i < 50; i++){
-				n+=amp*noise(p, f);
-				f*=2.;
-				normK+=amp;
-				amp*=persistance;
-				if (iCount == res) break;
-				iCount++;
-			}
-			float nf = n/normK;
-			return nf*nf*nf*nf;
-		}
-
-		vec3 hash3(vec2 p) {
-			vec3 q = vec3(dot(p,vec2(127.1,311.7)), 
-						  dot(p,vec2(269.5,183.3)), 
-						  dot(p,vec2(419.2,371.9)));
-			return fract(sin(q)*43758.5453);
-		}
-
-		float iqnoise(vec2 x, float u, float v) {
-			vec2 p = floor(x);
-			vec2 f = fract(x);
-		
-			float k = 1.0+63.0*pow(1.0-v,4.0);
-	
-			float va = 0.0;
-			float wt = 0.0;
-			for( int j=-2; j<=2; j++ )
-			for( int i=-2; i<=2; i++ )
-			{
-				vec2 g = vec2( float(i),float(j) );
-				vec3 o = hash3( p + g )*vec3(u,u,1.0);
-				vec2 r = g - f + o.xy;
-				float d = dot(r,r);
-				float ww = pow( 1.0-smoothstep(0.0,1.414,sqrt(d)), k );
-				va += o.z*ww;
-				wt += ww;
-			}
-	
-			return va/wt;
-		}
-
-		)";
+	std::map<std::string, std::string> parameters() {
+		return {
+			{ "uv", "cUV" },
+			{ "scale", "Scale" },
+			{ "patternX", "Pattern X" },
+			{ "patternY", "Pattern Y" }
+		};
 	}
 
 	void onCreate() {
-		// TODO: How to maintain the same size accross nodes?
-		outputWidth = 512;
-		outputHeight = 512;
-
-		addParam("Pattern X", NodeValueType::float1);
-		addParam("Pattern Y", NodeValueType::float1);
-		addParam("Scale", NodeValueType::float1);
+		addParam("Pattern X", ValueType::scalar);
+		addParam("Pattern Y", ValueType::scalar);
+		addParam("Scale", ValueType::scalar);
 		setParam("Scale", 1.0f);
 	}
 
@@ -176,27 +211,32 @@ public:
 
 class ThresholdNode : public GraphicsNode {
 public:
-	std::string source() {
-		return R"(
-			float fac = uParamFeather / 2.0;
-			float e0 = uParamThreshold - fac;
-			float e1 = uParamThreshold + fac;
+	std::string library() {
+		return R"(void opr_threshold(in vec4 color, float threshold, float feather, out float outValue) {
+	float fac = feather / 2.0;
+	float e0 = threshold - fac;
+	float e1 = threshold + fac;
 
-			vec4 col = Tex(uInA, cUV);
-			float luma = dot(col.rgb, vec3(0.299, 0.587, 0.114));
+	float luma = dot(color.rgb, vec3(0.299, 0.587, 0.114));
 
-			return vec4(vec3(smoothstep(e0, e1, luma)), col.a);
-		)";
+	outValue = vec4(vec3(smoothstep(e0, e1, luma)), color.a);
+})";
+	}
+
+	std::string functionName() { return "opr_threshold"; }
+
+	std::map<std::string, std::string> parameters() {
+		return {
+			{ "color", "A" },
+			{ "threshold", "Threshold" },
+			{ "feather", "Feather" }
+		};
 	}
 
 	void onCreate() {
-		// TODO: How to maintain the same size accross nodes?
-		outputWidth = 512;
-		outputHeight = 512;
-
-		addInput("A", NodeValueType::image);
-		addParam("Feather", NodeValueType::float1);
-		addParam("Threshold", NodeValueType::float1);
+		addInput("A", ValueType::vec4);
+		addParam("Feather", ValueType::scalar);
+		addParam("Threshold", ValueType::scalar);
 		setParam("Threshold", 0.5f);
 	}
 
@@ -206,23 +246,24 @@ public:
 
 class ImageNode : public GraphicsNode {
 public:
-	std::string source() {
-		return R"(
-			vec2 uv = cUV;
-			if (uInUvConnected) {
-				uv = Tex(uInUv, cUV).rg;
-			}
-			return Tex(uParamImage, uv);
-		)";
+	std::string library() {
+		return R"(void gen_image(in vec2 uv, in image2D img, out vec4 outColor) {
+	outColor = Tex(img, uv);
+})";
+	}
+
+	std::string functionName() { return "gen_image"; }
+
+	std::map<std::string, std::string> parameters() {
+		return {
+			{ "uv", "UV" },
+			{ "img", "Image" }
+		};
 	}
 
 	void onCreate() {
-		// TODO: How to maintain the same size accross nodes?
-		outputWidth = 512;
-		outputHeight = 512;
-
-		addInput("UV", NodeValueType::image);
-		addParam("Image", NodeValueType::image);
+		addInput("UV", ValueType::vec2);
+		addParam("Image", ValueType::image);
 	}
 
 	Texture* handle;
@@ -231,51 +272,51 @@ public:
 
 class UVNode : public GraphicsNode {
 public:
-	std::string definitions() override {
-		return R"(vec2 mirrored(vec2 v) {
-			vec2 m = mod(v, 2.0);
-			return mix(m, 2.0 - m, step(1.0, m));
-		})";
+	/** TODO: Need a node for this part:
+		vec2 s = 1.0 / vec2(imageSize(uInDeform));
+        
+		float p  = Tex(uInDeform, cUV).x;
+		float h1 = Tex(uInDeform, cUV + s * vec2(1.0, 0.0)).x;
+		float v1 = Tex(uInDeform, cUV + s * vec2(0.0, 1.0)).x;
+      
+   		vec2 n = (p - vec2(h1, v1));
+	*/
+
+	std::string library() {
+		return R"(void mirrored(vec2 v, out vec2 outV) {
+	vec2 m = mod(v, 2.0);
+	outV = mix(m, 2.0 - m, step(1.0, m));
+}
+
+void out_uv(vec2 uv, float repeat, float strength, in vec2 deform, out vec2 duv) {
+	duv = uv + ((deform * 2.0 - 1.0) * strength);
+	if (repeat == 0.0) { // clamp to edge
+		duv = clamp(duv, 0.0, 1.0);
+	} else if (repeat == 1.0) { // repeat
+		duv = mod(duv, 1.0);
+	} else if (repeat == 2.0) { // mirror
+		mirrored(duv, duv);
+	}
+}
+)";
 	}
 
-	std::string source() {
-		return R"(
-			vec2 duv = cUV;
-			if (uInDeformConnected) {
-				vec2 s = 1.0 / vec2(imageSize(uInDeform));
-        
-				float p  = Tex(uInDeform, cUV).x;
-				float h1 = Tex(uInDeform, cUV + s * vec2(1.0, 0.0)).x;
-				float v1 = Tex(uInDeform, cUV + s * vec2(0.0, 1.0)).x;
-      
-   				vec2 n = (p - vec2(h1, v1));
-    
-				duv = cUV + ((n * 2.0 - 1.0) * uParamStrength);
-			}
+	std::string functionName() { return "out_uv"; }
 
-			if (uParamRepeat == 0.0) { // clamp to edge
-				duv = clamp(duv, 0.0, 1.0);
-			} else if (uParamRepeat == 1.0) { // repeat
-				duv = mod(duv, 1.0);
-			} else if (uParamRepeat == 2.0) { // mirror
-				duv = mirrored(duv);
-			}
-
-			return vec4(duv, 0.0, 1.0);
-		)";
+	std::map<std::string, std::string> parameters() {
+		return {
+			{ "uv", "cUV" },
+			{ "repeat", "Repeat" },
+			{ "strength", "Strength" },
+			{ "deform", "Deform" }
+		};
 	}
 
 	void onCreate() {
-		// TODO: How to maintain the same size accross nodes?
-		outputWidth = 512;
-		outputHeight = 512;
-
-		addInput("Deform", NodeValueType::image);
-		addParam("Repeat", NodeValueType::float1);
-		addParam("Strength", NodeValueType::float1);
+		addInput("Deform", ValueType::vec2);
+		addParam("Repeat", ValueType::scalar);
+		addParam("Strength", ValueType::scalar);
 		setParam("Strength", 1.0f);
 	}
-
-	Texture* handle;
 
 };

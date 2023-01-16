@@ -183,8 +183,10 @@
     <ClCompile Include="Panel.cpp" />
     <ClCompile Include="RadioSelector.cpp" />
     <ClCompile Include="Shader.cpp" />
+    <ClCompile Include="ShaderGen.cpp" />
     <ClCompile Include="Slider.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClInclude Include="TextureNodeGraph.hpp" />
     <ClCompile Include="TextureNodeRegistry.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="main.cpp" />
@@ -217,6 +219,7 @@
     <ClInclude Include="portable-file-dialogs.h" />
     <ClInclude Include="RadioSelector.h" />
     <ClInclude Include="Shader.h" />
+    <ClInclude Include="ShaderGen.h" />
     <ClInclude Include="Slider.h" />
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureNodes.hpp" />
