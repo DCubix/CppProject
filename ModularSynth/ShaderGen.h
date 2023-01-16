@@ -47,8 +47,6 @@ void main() {
 	vec2 cUV = vec2(c__Coords) / vec2(gl_NumWorkGroups.xy * 16);
 	
 <body>
-
-	imageStore(bOutput, c__Coords, pixel);
 }
 )";
 

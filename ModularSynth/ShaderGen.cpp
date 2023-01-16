@@ -2,15 +2,15 @@
 
 #include <cctype>
 #include <format>
+#include <iostream>
 
 #include "Window.h"
 
 // HEAVILY INSPIRED BY https://github.com/UPBGE/upbge/blob/upbge0.2.5/source/blender/gpu/intern/gpu_codegen.c#L701
 
 void ShaderGen::loadLib(const std::string& src) {
-	StringScanner ss{ src };
-
 	const std::regex identifierName("[a-zA-Z0-9_]");
+	StringScanner ss{ src };
 
 	while (ss.peek()) {
 		size_t pos = ss.position();
@@ -40,7 +40,6 @@ void ShaderGen::loadLib(const std::string& src) {
 				// read param
 				std::vector<std::string> paramStr;
 				while (ss.peek() != ',' && ss.peek() != ')') {
-					OutputDebugStringA("\t\tSINGLE_PARAM_LOOP\n");
 					paramStr.push_back(ss.scanWhile(identifierName));
 					ss.skipSpaces();
 				}
@@ -114,13 +113,41 @@ void ShaderGen::pasteFunction(const std::string& funcName, const std::string& sh
 		return;
 	}
 
-	if (m_shaderLib.find(funcName) == m_shaderLib.end()) { // not found? load lib!
-		loadLib(shaderCode);
+	if (m_shaderLib.find(funcName) == m_shaderLib.end()) { // not found? bleh
+		return;
 	}
 
 	auto func = m_shaderLib[funcName];
-	m_defs += shaderCode.substr(func.stringIndex, func.stringLength);
-	m_defs += '\n';
+	auto src = shaderCode.substr(func.stringIndex, func.stringLength);
+
+	// check for dependent functions
+	const std::regex identifierName("[a-zA-Z0-9_]");
+	StringScanner ss{ src };
+
+	while (ss.peek()) {
+		size_t pos = ss.position();
+		char c = ss.scan();
+
+		if (std::isalpha(c)) { // check for functions
+			std::string identifier = c + ss.scanWhile(identifierName);
+			ss.skipSpaces();
+
+			if (ss.peek() != '(') { // expect function signature, otherwise it's not a function.
+				continue;
+			}
+
+			while (ss.peek() != ')' && ss.peek() != 0) ss.scan();
+			if (ss.peek() == ')') ss.scan();
+			ss.skipSpaces();
+
+			if (ss.peek() == ';') {
+				pasteFunction(identifier, shaderCode);
+			}
+		}
+	}
+
+	m_defs += src;
+	m_defs += '\n\n';
 
 	m_pasted.push_back(funcName);
 }

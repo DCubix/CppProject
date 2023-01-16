@@ -90,9 +90,14 @@ public:
 			nodes.push(get(m_nodePath[i]));
 		}
 
+		Node* lastNode = nullptr;
+
 		// solve nodes
 		while (!nodes.empty()) {
 			auto node = static_cast<GraphicsNode*>(nodes.top()); nodes.pop();
+			if (nodes.size() == 1) {
+				lastNode = nodes.top();
+			}
 			
 			// a
 			gen.pasteFunction(node->functionName(), lib);
@@ -149,9 +154,23 @@ public:
 			gen.append(");\n");
 		}
 
+		// output the last node output by default
+		if (lastNode) {
+			auto varName = std::format("out_{}_{}", lastNode->id(), 0);
+			gen.append(std::format("\timageStore(bOutput, c__Coords, {});\n", varName));
+		}
+
 		std::ofstream of("gen.glsl");
 		of << gen.generate();
 		of.close();
+
+		if (generatedShader) {
+			generatedShader.reset();
+		}
+
+		generatedShader = std::make_unique<Shader>();
+		generatedShader->add(gen.generate(), GL_COMPUTE_SHADER);
+		generatedShader->link();
 	}
 
 	bool checkParams(ShaderGen& gen, GraphicsNode* node, const std::string& inputParamName, ValueType paramType) {
@@ -181,5 +200,7 @@ public:
 			return true;
 		}
 	}
+
+	std::unique_ptr<Shader> generatedShader;
 
 };
