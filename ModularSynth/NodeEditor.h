@@ -35,7 +35,7 @@ public:
 	Dimension computeSize(NVGcontext* ctx);
 	const Dimension& size() const { return m_size; }
 
-	virtual Dimension extraSize() { return Dimension(); }
+	virtual Dimension extraSize() { return { 0, 0 }; }
 	virtual void onExtraDraw(NVGcontext* ctx, float deltaTime) {}
 
 	size_t outputCount() const { return m_node->outputCount(); }
@@ -116,6 +116,7 @@ public:
 	NodeGraph* graph() { return m_graph.get(); }
 
 	std::function<void(VisualNode*)> onSelect{ nullptr };
+	std::function<void()> onParamChange{ nullptr };
 
 private:
 	std::vector<std::unique_ptr<VisualNode>> m_nodes;

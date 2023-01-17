@@ -3,6 +3,8 @@
 #include "NodeGraph.h"
 #include "GraphicsNode.h"
 #include "ShaderGen.h"
+#include "Shader.h"
+#include "Texture.h"
 
 #include <format>
 #include <fstream>
@@ -11,7 +13,7 @@
 class TextureNodeGraph : public NodeGraph {
 public:
 	void solve() override {
-		NodeGraph::solve();
+		if (m_nodePath.empty()) buildNodePath();
 
 		// TODO: Generate the shader here
 		ShaderGen gen{};
@@ -157,7 +159,9 @@ public:
 		// output the last node output by default
 		if (lastNode) {
 			auto varName = std::format("out_{}_{}", lastNode->id(), 0);
-			gen.append(std::format("\timageStore(bOutput, c__Coords, {});\n", varName));
+			gen.append("\timageStore(bOutput, c__Coords, ");
+			gen.convertType(lastNode->output(0).type, ValueType::vec4, varName);
+			gen.append(");\n");
 		}
 
 		std::ofstream of("gen.glsl");
@@ -171,6 +175,8 @@ public:
 		generatedShader = std::make_unique<Shader>();
 		generatedShader->add(gen.generate(), GL_COMPUTE_SHADER);
 		generatedShader->link();
+
+		render();
 	}
 
 	bool checkParams(ShaderGen& gen, GraphicsNode* node, const std::string& inputParamName, ValueType paramType) {
@@ -202,5 +208,59 @@ public:
 	}
 
 	std::unique_ptr<Shader> generatedShader;
+	std::unique_ptr<Texture> output;
+
+	void render(uint32_t width = 1024, uint32_t height = 1024) {
+		if (!generatedShader) return;
+
+		if (!output) {
+			output = std::unique_ptr<Texture>(new Texture({ width, height, 0 }, GL_RGBA8));
+		}
+
+		glBindImageTexture(0, output->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA8);
+		glUseProgram(generatedShader->id());
+
+		setUniforms();
+
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glDispatchCompute(output->size()[0] / 16, output->size()[1] / 16, 1);
+
+		glUseProgram(0);
+	}
+
+private:
+	void setUniform(const std::string& name, const NodeValue& nv, size_t index) {
+		auto shader = generatedShader.get();
+		switch (nv.type) {
+			case ValueType::scalar: shader->uniform<1>(name, { nv.value[0] }); break;
+			case ValueType::vec2: shader->uniform<2>(name, { nv.value[0], nv.value[1] }); break;
+			case ValueType::vec3: shader->uniform<3>(name, { nv.value[0], nv.value[1], nv.value[2] }); break;
+			case ValueType::vec4: shader->uniform<4>(name, nv.value); break;
+			case ValueType::image: {
+				glBindImageTexture(index, GLuint(nv.value[0]), 0, false, 0, GL_READ_ONLY, GL_RGBA8);
+			} break;
+		}
+	}
+
+	void setNodeUniforms(GraphicsNode* node) {
+		size_t binding = 1;
+		for (auto& [paramName, nv] : node->params()) {
+			// UNIFORM
+			auto uniName = std::format("param_{}_{}", node->id(), toCamelCase(paramName));
+			setUniform(uniName, nv, 0);
+
+			// BODY
+			if (nv.type == ValueType::image) {
+				generatedShader->uniformInt<1>(std::format("uniform bool {}_conn;\n", uniName), { nv.connected ? 1 : 0 });
+			}
+		}
+	}
+
+	void setUniforms() {
+		for (size_t i = 0; i < m_nodePath.size(); i++) {
+			auto node = static_cast<GraphicsNode*>(get(m_nodePath[i]));
+			setNodeUniforms(node);
+		}
+	}
 
 };

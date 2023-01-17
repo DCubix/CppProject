@@ -157,6 +157,14 @@ bool Window::create(const WindowParams& params) {
 	initializeGLEXT();
 	m_glrc = initializeGL();
 
+	// Load RenderDoc
+	if (HMODULE mod = GetModuleHandleA("renderdoc.dll")) {
+		pRENDERDOC_GetAPI RENDERDOC_GetAPI =
+			(pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+		int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void**)&rdoc_api);
+		assert(ret == 1);
+	}
+
 	ShowWindow(m_handle, SW_SHOW);
 	UpdateWindow(m_handle);
 

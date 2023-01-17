@@ -7,9 +7,14 @@
 #include <queue>
 
 #include "glad/glad.h"
+#include "renderdoc_app.h"
 
 using String = std::basic_string<TCHAR>;
 using Size = std::pair<uint32_t, uint32_t>;
+
+static RENDERDOC_API_1_1_2* rdoc_api = nullptr;
+
+#define RDOC if (rdoc_api) rdoc_api
 
 // simple events
 struct WindowEvent {

@@ -82,6 +82,12 @@ bool NodeGraph::hasChanges() const {
 	return false;
 }
 
+void NodeGraph::clearChanges() {
+	for (auto&& node : m_nodes) {
+		if (node->changed()) node->m_changed = false;
+	}
+}
+
 std::vector<Connection> NodeGraph::getNodeInputConnections(Node* node) {
 	std::vector<Connection> ret;
 	for (auto&& conn : m_connections) {

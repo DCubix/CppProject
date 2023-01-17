@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <functional>
 
 // From https://helloacm.com/convert-a-string-to-camel-case-format-in-c/#:~:text=How%20to%20Convert%20a%20String%20into%20Camel%20Case%20in%20C%2B%2B%3F&text=function,end()%2C%20data.
 std::string toCamelCase(const std::string& text) {
@@ -45,159 +46,10 @@ void GraphicsNode::addParam(const std::string& name, ValueType type) {
 
 void GraphicsNode::setup() {
 	onCreate();
-
-	/*m_texture = std::unique_ptr<Texture>(new Texture({ previewSize, previewSize }, GL_RGBA8));
-	m_shader = std::unique_ptr<Shader>(new Shader());
-	m_shader->add(processedSource(), GL_COMPUTE_SHADER);
-	m_shader->link();
-
-	std::ofstream of{ "shader.glsl" };
-	of << processedSource();
-	of.close();*/
 	addOutput("Output", ValueType::vec4);
 }
 
-static void setUniformNodeValue(Shader* shader, const std::string& name, const NodeValue& nv, size_t index) {
-	switch (nv.type) {
-		case ValueType::scalar: shader->uniform<1>(name, { nv.value[0] }); break;
-		case ValueType::vec2: shader->uniform<2>(name, { nv.value[0], nv.value[1] }); break;
-		case ValueType::vec3: shader->uniform<3>(name, { nv.value[0], nv.value[1], nv.value[2] }); break;
-		case ValueType::vec4: shader->uniform<4>(name, nv.value); break;
-		case ValueType::image: {
-			glBindImageTexture(index, GLuint(nv.value[0]), 0, false, 0, GL_READ_ONLY, GL_RGBA8);
-		} break;
-	}
-}
-
 NodeValue GraphicsNode::solve() {
-	/*glBindImageTexture(0, m_texture->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA8);
-	glUseProgram(m_shader->id());
-
-	size_t binding = 1;
-	for (size_t i = 0; i < m_inputs.size(); i++) {
-		NodeValue& nv = m_inputs[i];
-
-		m_shader->uniformInt<1>(std::format("uIn{}Connected", toCorrectCase(m_inputNames[i])), { nv.connected ? 1 : 0 });
-
-		std::string name = std::format("uIn{}", toCorrectCase(m_inputNames[i]));
-		setUniformNodeValue(m_shader.get(), name, nv, binding++);
-	}
-
-	for (auto&& [paramName, nv] : m_params) {
-		std::string name = std::format("uParam{}", toCorrectCase(paramName));
-		setUniformNodeValue(m_shader.get(), name, nv, binding++);
-	}
-
-	glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-	glDispatchCompute(m_texture->size()[0]/16, m_texture->size()[1]/16, 1);*/
-
 	m_solved = true;
-
-	//m_outputs[0].value[0] = float(m_texture->id());
-
-	/*NodeValue ret = {
-		.value = m_outputs[0].value,
-		.type = ValueType::image
-	};
-	return ret;*/
 	return NodeValue();
-}
-
-std::string GraphicsNode::processedSource() {
-#if 0
-	std::string images = "";
-	std::string src = R"(#version 460
-layout (local_size_x=16, local_size_y=16) in;
-layout (rgba8, binding=0) uniform image2D bOutput;
-	
-<images>
-)";
-
-	size_t binding = 1;
-	for (size_t i = 0; i < m_inputs.size(); i++) {
-		NodeValue& nv = m_inputs[i];
-		auto name = toCamelCase(m_inputNames[i]);
-
-		switch (nv.type) {
-			case ValueType::scalar: src += std::format("uniform float uIn{};", name); break;
-			case ValueType::vec2: src += std::format("uniform vec2 uIn{};", name); break;
-			case ValueType::vec3: src += std::format("uniform vec3 uIn{};", name); break;
-			case ValueType::vec4: src += std::format("uniform vec4 uIn{};", name); break;
-			case ValueType::image:
-				images += std::format("layout (rgba8, binding={}) uniform image2D uIn{};\n", binding, name);
-			break;
-		}
-		src += std::format("uniform bool uIn{}Connected;", toCamelCase(name));
-
-		src += "\n";
-		binding++;
-	}
-
-	src += "\n";
-
-	for (auto&& [ paramName, nv ] : m_params) {
-		auto name = toCamelCase(paramName);
-
-		switch (nv.type) {
-			case ValueType::scalar: src += std::format("uniform float uParam{};", name); break;
-			case ValueType::vec2: src += std::format("uniform vec2 uParam{};", name); break;
-			case ValueType::vec3: src += std::format("uniform vec3 uParam{};", name); break;
-			case ValueType::vec4: src += std::format("uniform vec4 uParam{};", name); break;
-			case ValueType::image:
-				images += std::format("layout (rgba8, binding={}) uniform image2D uParam{};\n", binding, name);
-				break;
-		}
-
-		src += "\n";
-		binding++;
-	}
-
-	src.replace(src.find("<images>"), 8, images);
-
-	src += "\n";
-
-	src += R"(
-//vec4 Tex(image2D img, vec2 uv) {
-//	vec2 sz = vec2(imageSize(img));
-//	ivec2 pc = ivec2(uv * sz);
-//	return imageLoad(img, pc);
-//}
-
-float fmod(float x, float y) {
-	return x - y * trunc(x / y);
-}
-
-vec2 fmod(vec2 x, float y) {
-	return vec2(fmod(x.x, y), fmod(x.y, y));
-}
-
-#define Tex(name, uv) imageLoad(name, ivec2(uv * vec2(imageSize(name).xy)))
-#define PI 3.141592654
-
-float rand(float n) { return fract(sin(n) * 43758.5453123); }
-float rand(vec2 n) { 
-	return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
-}
-<defs>
-
-vec4 mainFunc(vec2 cUV) {
-#line 0
-	)";
-
-	src.replace(src.find("<defs>"), 6, definitions());
-
-	src += source();
-	src += "\n}";
-
-	src += R"(
-void main() {
-	ivec2 c__Coords = ivec2(gl_GlobalInvocationID.xy);
-	vec2 c__uv = vec2(c__Coords) / vec2(gl_NumWorkGroups.xy * 16);
-	vec4 pixel = mainFunc(c__uv);
-	imageStore(bOutput, c__Coords, pixel);
-})";
-
-	return src;
-#endif
-	return "";
 }

@@ -39,7 +39,8 @@ NodeEditor::NodeEditor(NodeGraph* graph) {
 
 void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 	if (m_graph->hasChanges()) {
-		m_graph->solve();
+		if (onParamChange) onParamChange();
+		m_graph->clearChanges();
 	}
 
 	Rect b = bounds;
@@ -118,11 +119,6 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 
 		nvgStrokeWidth(ctx, 6.0f);
 		nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.3f));
-		nvgStroke(ctx);
-
-		nvgBeginPath(ctx);
-		nvgRoundedRect(ctx, bounds.x, bounds.y, bounds.width, bounds.height, 10.0f);
-		nvgStrokeWidth(ctx, 2.5f);
 		nvgStroke(ctx);
 	}
 
@@ -376,10 +372,12 @@ void VisualNode::onDraw(NVGcontext* ctx, float deltaTime) {
 		posY += halfTextHeight * 2.0f + gapBetweenInOuts;
 	}
 
-	nvgSave(ctx);
-	nvgTranslate(ctx, padding, sz.height - (extraSize().height + padding));
-	onExtraDraw(ctx, deltaTime);
-	nvgRestore(ctx);
+	if (extraSize().width * extraSize().height > 0) {
+		nvgSave(ctx);
+		nvgTranslate(ctx, padding, sz.height - (extraSize().height + padding));
+		onExtraDraw(ctx, deltaTime);
+		nvgRestore(ctx);
+	}
 
 	nvgRestore(ctx);
 }

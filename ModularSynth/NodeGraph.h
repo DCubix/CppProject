@@ -101,6 +101,7 @@ public:
 	size_t lastNode() const { return m_nodePath.empty() ? 0 : m_nodePath.front(); }
 
 	bool hasChanges() const;
+	void clearChanges();
 
 protected:
 	std::vector<std::unique_ptr<Node>> m_nodes;

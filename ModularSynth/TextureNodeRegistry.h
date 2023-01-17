@@ -20,20 +20,12 @@ static constexpr Color generatorNodeColor = hex2rgbf(0x47b394);
 static constexpr Color operatorNodeColor = hex2rgbf(0xb86335);
 static constexpr Color externalNodeColor = hex2rgbf(0x7a30ba);
 
-class VisualTextureNode : public VisualNode {
-public:
-	Dimension extraSize() override { return { 100, 100 }; }
-	void onExtraDraw(NVGcontext* ctx, float deltaTime) override;
-
-	int image = -1;
-};
-
 /* UI Editing */
 using GuiBuilder = std::function<Control* (GUISystem*, VisualNode*)>;
 
 /* ========== */
 
-using NodeBuilder = std::function<VisualTextureNode* (NodeEditor*, const std::string&, const std::string&)>;
+using NodeBuilder = std::function<VisualNode* (NodeEditor*, const std::string&, const std::string&)>;
 
 struct NodeContructor {
 	std::string code, name;
@@ -41,7 +33,7 @@ struct NodeContructor {
 	GuiBuilder onGui;
 };
 
-#define NodeCtor(T, c) [](NodeEditor* editor, const std::string& name, const std::string& code) { return editor->create<T, VisualTextureNode>(name, code, c); }
+#define NodeCtor(T, c) [](NodeEditor* editor, const std::string& name, const std::string& code) { return editor->create<T, VisualNode>(name, code, c); }
 
 static Control* gui_ValueSlider(
 	GUISystem* gui,
@@ -329,7 +321,7 @@ static Control* createTextureNodeEditorGui(GUISystem* gui, VisualNode* ref) {
 	return nullptr;
 }
 
-static VisualTextureNode* createNewTextureNode(NodeEditor* editor, const std::string& code) {
+static VisualNode* createNewTextureNode(NodeEditor* editor, const std::string& code) {
 	for (NodeContructor ctor : nodeTypes) {
 		if (ctor.code == code) {
 			return ctor.onCreate(editor, ctor.name, ctor.code);

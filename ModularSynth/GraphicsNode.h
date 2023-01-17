@@ -1,8 +1,6 @@
 #pragma once
 
 #include "NodeGraph.h"
-#include "Shader.h"
-#include "Texture.h"
 
 #include <memory>
 #include <map>
@@ -49,15 +47,8 @@ public:
 
 	bool hasParam(const std::string& name) { return m_params.find(name) != m_params.end(); }
 
-	GLuint textureID() const { return m_texture ? m_texture->id() : 0; }
-
 	const std::map<std::string, NodeValue>& params() { return m_params; }
 
 protected:
-	std::unique_ptr<Texture> m_texture;
-	std::unique_ptr<Shader> m_shader;
-	
 	std::map<std::string, NodeValue> m_params;
-
-	std::string processedSource();
 };

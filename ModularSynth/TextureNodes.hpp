@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GraphicsNode.h"
+#include "Texture.h"
 
 class ColorNode : public GraphicsNode {
 public:

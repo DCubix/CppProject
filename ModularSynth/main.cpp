@@ -80,6 +80,8 @@ public:
 		gui->addControl(pnl);
 
 		NodeEditor* ned = new NodeEditor(new TextureNodeGraph());
+		graph = static_cast<TextureNodeGraph*>(ned->graph());
+
 		ned->bounds = { 340, 12, int(app.window().size().first) - 352, int(app.window().size().second) - 24 };
 		gui->addControl(ned);
 
@@ -95,14 +97,23 @@ public:
 			}
 		};
 
+		ned->onParamChange = [=]() {
+			graph->render();
+		};
+
 		/* NODE TEST */
 		auto col1 = createNewTextureNode(ned, "COL");
 		((GraphicsNode*)col1->node())->setParam("Color", { 1.0f, 0.0f, 0.0f, 1.0f });
-		/*auto col2 = createNewTextureNode(ned, "COL");
-		((GraphicsNode*)col2->node())->setParam("Color", { 0.0f, 1.0f, 0.0f, 1.0f });*/
+		auto col2 = createNewTextureNode(ned, "COL");
+		((GraphicsNode*)col2->node())->setParam("Color", { 0.0f, 1.0f, 0.0f, 1.0f });
+
+		auto mix = createNewTextureNode(ned, "MIX");
+
+		//ned->connect(col1, 0, mix, 0);
+		//ned->connect(col2, 0, mix, 1);
 
 		//createNewTextureNode(ned, "NOI");
-		createNewTextureNode(ned, "MIX");
+		
 		//createNewTextureNode(ned, "THR");
 		//createNewTextureNode(ned, "IMG");
 		//createNewTextureNode(ned, "IMG");
@@ -142,6 +153,23 @@ public:
 
 		gui->renderAll(ctx, dt);
 
+		if (graph->output) {
+			if (image < 0) {
+				image = nvglCreateImageFromHandleGL3(
+					ctx,
+					graph->output->id(),
+					graph->output->size()[0],
+					graph->output->size()[1], 0
+				);
+			}
+
+			NVGpaint imgPaint = nvgImagePattern(ctx, 0.0f, 250.0f, graph->output->size()[0], graph->output->size()[1], 0.0f, image, 1.0f);
+			nvgBeginPath(ctx);
+			nvgRect(ctx, 0.0f, 250.0f, 256, 256);
+			nvgFillPaint(ctx, imgPaint);
+			nvgFill(ctx);
+		}
+
 		nvgEndFrame(ctx);
 	}
 
@@ -152,11 +180,13 @@ public:
 
 	NVGcontext* ctx;
 
+	TextureNodeGraph* graph;
+
 	GUISystem* gui;
 	Control* singleNodeEditor{ nullptr };
 	float bgColor[3] = { 0.1f, 0.2f, 0.4f };
 
-	int image;
+	int image{ -1 };
 };
 
 int main(int argc, char** argv) {
