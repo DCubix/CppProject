@@ -112,6 +112,7 @@ public:
 	}
 
 	void connect(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput);
+	void removeConnection(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput);
 
 	NodeGraph* graph() { return m_graph.get(); }
 

@@ -61,6 +61,7 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgSave(ctx);
 	nvgStrokeWidth(ctx, 3.0f);
 	nvgStrokeColor(ctx, nvgRGBf(1.0f, 1.0f, 1.0f));
+	nvgLineCap(ctx, NVG_ROUND);
 
 	for (auto&& conn : m_connections) {
 		Rect outRect = conn.source->getOutputRect(conn.sourceOutput);
@@ -74,6 +75,15 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgCircle(ctx, inRect.x + 5, inRect.y + 5, 4.5f);
 		nvgFillColor(ctx, nvgRGBf(1.0f, 1.0f, 1.0f));
 		nvgFill(ctx);
+
+		Point mid = lerpPoint({ outRect.x + 5, outRect.y + 5 }, { inRect.x + 5, inRect.y + 5 }, 0.5f);
+
+		nvgBeginPath(ctx);
+		nvgMoveTo(ctx, mid.x - 6, mid.y - 6);
+		nvgLineTo(ctx, mid.x + 6, mid.y + 6);
+		nvgMoveTo(ctx, mid.x + 6, mid.y - 6);
+		nvgLineTo(ctx, mid.x - 6, mid.y + 6);
+		nvgStroke(ctx);
 	}
 	nvgRestore(ctx);
 
@@ -182,6 +192,18 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 					}
 					break;
 				}
+			}
+		}
+	}
+	else {
+		for (auto&& conn : m_connections) {
+			Rect outRect = conn.source->getOutputRect(conn.sourceOutput);
+			Rect inRect = conn.destination->getInputRect(conn.destinationInput);
+			Point mid = lerpPoint({ outRect.x + 5, outRect.y + 5 }, { inRect.x + 5, inRect.y + 5 }, 0.5f);
+			Rect midRect = { mid.x - 6, mid.y - 6, 12, 12 };
+			if (midRect.hasPoint({ x, y }) && button == 3) { // RMB = remove link
+				removeConnection(conn.source, conn.sourceOutput, conn.destination, conn.destinationInput);
+				break;
 			}
 		}
 	}
@@ -451,6 +473,19 @@ void NodeEditor::connect(VisualNode* source, size_t sourceOutput, VisualNode* de
 	m_connections.push_back(conn);
 
 	m_graph->connect(source->node(), sourceOutput, destination->node(), destinationInput);
+	m_graph->solve();
+}
+
+void NodeEditor::removeConnection(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput) {
+	auto pos = std::find_if(m_connections.begin(), m_connections.end(), [=](const VisualConnection& cn) {
+		return cn.destination == destination &&
+			cn.destinationInput == destinationInput &&
+			cn.source == source &&
+			cn.sourceOutput == sourceOutput;
+		});
+	if (pos == m_connections.end()) return;
+	m_connections.erase(pos);
+	m_graph->removeConnection(source->node(), sourceOutput, destination->node(), destinationInput);
 	m_graph->solve();
 }
 

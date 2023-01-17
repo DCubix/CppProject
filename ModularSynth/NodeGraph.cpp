@@ -48,6 +48,20 @@ void NodeGraph::connect(Node* source, size_t sourceOutput, Node* destination, si
 	buildNodePath();
 }
 
+void NodeGraph::removeConnection(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput) {
+	auto pos = std::find_if(m_connections.begin(), m_connections.end(), [=](const Connection& cn) {
+		return cn.destination == destination &&
+			cn.destinationInput == destinationInput &&
+			cn.source == source &&
+			cn.sourceOutput == sourceOutput;
+	});
+	if (pos == m_connections.end()) return;
+	source->m_outputs[sourceOutput].connected = false;
+	destination->m_inputs[destinationInput].connected = false;
+	m_connections.erase(pos);
+	buildNodePath();
+}
+
 void NodeGraph::solve() {
 	if (m_nodePath.empty()) buildNodePath();
 

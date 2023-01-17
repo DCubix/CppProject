@@ -96,6 +96,7 @@ public:
 	}
 
 	void connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
+	void removeConnection(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
 
 	virtual void solve();
 	size_t lastNode() const { return m_nodePath.empty() ? 0 : m_nodePath.front(); }
