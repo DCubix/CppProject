@@ -24,6 +24,13 @@ vec2 fmod(vec2 x, float y) {
 	return vec2(fmod(x.x, y), fmod(x.y, y));
 }
 
+vec3 hash3(vec2 p) {
+	vec3 q = vec3(dot(p,vec2(127.1,311.7)), 
+					dot(p,vec2(269.5,183.3)), 
+					dot(p,vec2(419.2,371.9)));
+	return fract(sin(q)*43758.5453);
+}
+
 #define Tex(name, uv) imageLoad(name, ivec2(uv * vec2(imageSize(name).xy)))
 #define PI 3.141592654
 

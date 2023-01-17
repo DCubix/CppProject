@@ -20,6 +20,7 @@ public:
 	}
 
 	void onCreate() {
+		addOutput("Output", ValueType::vec4);
 		addParam("Color", ValueType::vec4);
 	}
 
@@ -28,14 +29,12 @@ public:
 class SimpleGradientNode : public GraphicsNode {
 public:
 	std::string library() {
-		return R"(void gen_simple_gradient(vec2 uv, float angle, out vec4 outColor) {
+		return R"(void gen_simple_gradient(in vec2 uv, float angle, out float res) {
 	float c = cos(angle);
 	float s = sin(angle);
 	mat2 mat = mat2(c, -s, s, c);
-	vec4 ca = vec4(0.0, 0.0, 0.0, 1.0);
-	vec4 cb = vec4(1.0, 1.0, 1.0, 1.0);
 	vec2 rotatedUV = (mat * (uv * 2.0 - 1.0)) * 0.5 + 0.5;
-	outColor = mix(ca, cb, clamp(rotatedUV.x, 0.0, 1.0));
+	res = clamp(rotatedUV.x, 0.0, 1.0);
 })";
 	}
 
@@ -49,6 +48,7 @@ public:
 	}
 
 	void onCreate() {
+		addOutput("Output", ValueType::scalar);
 		addParam("Angle", ValueType::scalar);
 	}
 };
@@ -109,6 +109,7 @@ void opr_mix(float fac, float op, vec4 ca, vec4 cb, out vec4 outColor) {
 		addParam("Mode", ValueType::scalar);
 		setParam("Factor", 0.5f);
 		setParam("Mode", 0.0f);
+		addOutput("Output", ValueType::vec4);
 	}
 
 };
@@ -157,13 +158,6 @@ void pNoise(vec2 p, int res, out float outValue){
 	outValue = nf*nf*nf*nf;
 }
 
-void hash3(vec2 p, out vec3 res) {
-	vec3 q = vec3(dot(p,vec2(127.1,311.7)), 
-					dot(p,vec2(269.5,183.3)), 
-					dot(p,vec2(419.2,371.9)));
-	res = fract(sin(q)*43758.5453);
-}
-
 void iqnoise(vec2 x, float u, float v, out float res) {
 	vec2 p = floor(x);
 	vec2 f = fract(x);
@@ -206,6 +200,7 @@ void gen_noise(in vec2 uv, float scale, float patternX, float patternY, out floa
 		addParam("Pattern Y", ValueType::scalar);
 		addParam("Scale", ValueType::scalar);
 		setParam("Scale", 1.0f);
+		addOutput("Output", ValueType::scalar);
 	}
 
 };
@@ -239,6 +234,7 @@ public:
 		addParam("Feather", ValueType::scalar);
 		addParam("Threshold", ValueType::scalar);
 		setParam("Threshold", 0.5f);
+		addOutput("Output", ValueType::scalar);
 	}
 
 };
@@ -265,6 +261,7 @@ public:
 	void onCreate() {
 		addInput("UV", ValueType::vec2);
 		addParam("Image", ValueType::image);
+		addOutput("Output", ValueType::vec4);
 	}
 
 	Texture* handle;
@@ -318,6 +315,7 @@ void out_uv(vec2 uv, float repeat, float strength, in vec2 deform, out vec2 duv)
 		addParam("Repeat", ValueType::scalar);
 		addParam("Strength", ValueType::scalar);
 		setParam("Strength", 1.0f);
+		addOutput("Output", ValueType::vec2);
 	}
 
 };

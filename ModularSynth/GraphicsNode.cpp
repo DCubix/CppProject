@@ -46,7 +46,6 @@ void GraphicsNode::addParam(const std::string& name, ValueType type) {
 
 void GraphicsNode::setup() {
 	onCreate();
-	addOutput("Output", ValueType::vec4);
 }
 
 NodeValue GraphicsNode::solve() {
