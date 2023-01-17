@@ -159,10 +159,11 @@ public:
 				);
 			}
 
+			int x = app.window().size().first - 200;
 			int y = app.window().size().second - 200;
-			NVGpaint imgPaint = nvgImagePattern(ctx, 0.0f, y, graph->output->size()[0], graph->output->size()[1], 0.0f, image, 1.0f);
+			NVGpaint imgPaint = nvgImagePattern(ctx, x, y, 200, 200, 0.0f, image, 1.0f);
 			nvgBeginPath(ctx);
-			nvgRect(ctx, 0.0f, y, 200, 200);
+			nvgRect(ctx, x, y, 200, 200);
 			nvgFillPaint(ctx, imgPaint);
 			nvgFill(ctx);
 		}

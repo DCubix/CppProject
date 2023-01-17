@@ -50,8 +50,8 @@ float rgba_to_float(vec4 color) {
 <defs>
 
 void main() {
-	ivec2 c__Coords = ivec2(gl_GlobalInvocationID.xy);
-	vec2 cUV = vec2(c__Coords) / vec2(gl_NumWorkGroups.xy * 16);
+	ivec2 cCoords = ivec2(gl_GlobalInvocationID.xy);
+	vec2 cUV = vec2(cCoords) / vec2(gl_NumWorkGroups.xy * 16);
 	
 <body>
 }

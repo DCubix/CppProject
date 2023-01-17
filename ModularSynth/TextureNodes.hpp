@@ -215,7 +215,7 @@ public:
 
 	float luma = dot(color.rgb, vec3(0.299, 0.587, 0.114));
 
-	outValue = vec4(vec3(smoothstep(e0, e1, luma)), color.a);
+	outValue = smoothstep(e0, e1, luma) * color.a;
 })";
 	}
 
@@ -244,8 +244,8 @@ public:
 class ImageNode : public GraphicsNode {
 public:
 	std::string library() {
-		return R"(void gen_image(in vec2 uv, in image2D img, out vec4 outColor) {
-	outColor = Tex(img, uv);
+		return R"(void gen_image(in vec4 img, out vec4 outColor) {
+	outColor = img;
 })";
 	}
 
@@ -253,13 +253,13 @@ public:
 
 	std::map<std::string, std::string> parameters() {
 		return {
-			{ "uv", "UV" },
+			//{ "uv", "UV" },
 			{ "img", "Image" }
 		};
 	}
 
 	void onCreate() {
-		addInput("UV", ValueType::vec2);
+		//addInput("UV", ValueType::vec2);
 		addParam("Image", ValueType::image);
 		addOutput("Output", ValueType::vec4);
 	}

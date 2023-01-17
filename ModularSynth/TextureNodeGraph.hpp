@@ -27,15 +27,6 @@ public:
 			lib += node->library();
 			lib += "\n";
 
-			//for (size_t i = 0; i < node->inputCount(); i++) {
-			//	auto& nv = node->input(i);
-			//	if (nv.type == ValueType::image) continue;
-
-			//	// UNIFORM
-			//	auto uniName = std::format("in_{}_{}", node->id(), toCamelCase(node->inputName(i)));
-			//	gen.appendUniform(nv.type, uniName);
-			//}
-
 			// do the same for params
 			for (auto& [ paramName, nv ] : node->params()) {
 				// UNIFORM
@@ -44,8 +35,6 @@ public:
 
 				// BODY
 				if (nv.type == ValueType::image) {
-					gen.appendUniform(std::format("uniform bool {}_conn;\n", uniName));
-
 					auto varName = std::format("pix_{}_{}", node->id(), toCamelCase(paramName));
 					gen.append("\t");
 					gen.appendVariable(ValueType::vec4, varName);
@@ -159,7 +148,7 @@ public:
 		// output the last node output by default
 		if (lastNode) {
 			auto varName = std::format("out_{}_{}", lastNode->id(), 0);
-			gen.append("\timageStore(bOutput, c__Coords, ");
+			gen.append("\timageStore(bOutput, cCoords, ");
 			gen.convertType(lastNode->output(0).type, ValueType::vec4, varName);
 			gen.append(");\n");
 		}
@@ -184,14 +173,16 @@ public:
 			auto&& nv = node->param(inputParamName);
 
 			std::string varName = "";
-			if (nv.type == ValueType::image) {
+			ValueType type = nv.type;
+			if (type == ValueType::image) {
 				varName = std::format("pix_{}_{}", node->id(), toCamelCase(inputParamName));
+				type = ValueType::vec4;
 			}
 			else {
 				varName = std::format("param_{}_{}", node->id(), toCamelCase(inputParamName));
 			}
 
-			gen.convertType(nv.type, paramType, varName);
+			gen.convertType(type, paramType, varName);
 			return true;
 		}
 		// iv
@@ -242,24 +233,26 @@ private:
 		}
 	}
 
-	void setNodeUniforms(GraphicsNode* node) {
-		size_t binding = 1;
+	void setNodeUniforms(GraphicsNode* node, size_t& binding) {
 		for (auto& [paramName, nv] : node->params()) {
-			// UNIFORM
 			auto uniName = std::format("param_{}_{}", node->id(), toCamelCase(paramName));
-			setUniform(uniName, nv, 0);
+			
+			// UNIFORM
+			setUniform(uniName, nv, binding);
 
 			// BODY
 			if (nv.type == ValueType::image) {
-				generatedShader->uniformInt<1>(std::format("uniform bool {}_conn;\n", uniName), { nv.connected ? 1 : 0 });
+				binding++;
 			}
+			
 		}
 	}
 
 	void setUniforms() {
+		size_t binding = 1;
 		for (size_t i = 0; i < m_nodePath.size(); i++) {
 			auto node = static_cast<GraphicsNode*>(get(m_nodePath[i]));
-			setNodeUniforms(node);
+			setNodeUniforms(node, binding);
 		}
 	}
 
