@@ -74,10 +74,15 @@ public:
 		gui = new GUISystem();
 		gui->attachToApplication(app);
 
-		Panel* pnl = new Panel();
-		pnl->title = "Settings";
-		pnl->setLayout(new ColumnLayout());
-		gui->addControl(pnl);
+		Panel* pnlSettings = new Panel();
+		pnlSettings->title = "Settings";
+		pnlSettings->setLayout(new ColumnLayout());
+		gui->addControl(pnlSettings);
+
+		Panel* pnlControls = new Panel();
+		pnlControls->title = "Controls";
+		pnlControls->setLayout(new ColumnLayout());
+		gui->addControl(pnlControls);
 
 		NodeEditor* ned = new NodeEditor(new TextureNodeGraph());
 		graph = static_cast<TextureNodeGraph*>(ned->graph());
@@ -87,13 +92,13 @@ public:
 
 		ned->onSelect = [=](VisualNode* node) {
 			if (singleNodeEditor) {
-				pnl->removeChild(singleNodeEditor);
+				pnlSettings->removeChild(singleNodeEditor);
 				gui->removeControl(singleNodeEditor->id());
 				singleNodeEditor = nullptr;
 			}
 			singleNodeEditor = createTextureNodeEditorGui(gui, node);
 			if (singleNodeEditor) {
-				pnl->addChild(singleNodeEditor);
+				pnlSettings->addChild(singleNodeEditor);
 			}
 		};
 
@@ -101,32 +106,23 @@ public:
 			graph->render();
 		};
 
-		/* NODE TEST */
-		auto col1 = createNewTextureNode(ned, "COL");
-		((GraphicsNode*)col1->node())->setParam("Color", { 1.0f, 0.0f, 0.0f, 1.0f });
-		auto col2 = createNewTextureNode(ned, "COL");
-		((GraphicsNode*)col2->node())->setParam("Color", { 0.0f, 1.0f, 0.0f, 1.0f });
+		// build the Node list UI
+		for (NodeContructor ctor : nodeTypes) {
+			if (!ctor.onCreate) break;
 
-		auto mix = createNewTextureNode(ned, "MIX");
+			Button* btn = new Button();
+			gui->addControl(btn);
+			btn->text = std::format("[+] {}", ctor.name);
+			btn->onPress = [=]() {
+				createNewTextureNode(ned, ctor.code);
+			};
+			btn->bounds = { 0, 0, 0, 24 };
+			pnlControls->addChild(btn);
+		}
 
-		//ned->connect(col1, 0, mix, 0);
-		//ned->connect(col2, 0, mix, 1);
-
-		//createNewTextureNode(ned, "NOI");
-		
-		//createNewTextureNode(ned, "THR");
-		//createNewTextureNode(ned, "IMG");
-		//createNewTextureNode(ned, "IMG");
-		//createNewTextureNode(ned, "UVS");
-
-		//ned->connect(col1, 0, mix, 0);
-		//ned->connect(col2, 0, mix, 1);
-		//ned->connect(sgr, 0, mix, 2);
-
-		/* --------- */
-
-		pnl->bounds = { 12, 12, 320, int(app.window().size().second) - 24 };
-
+		int hh = app.window().size().second / 2;
+		pnlSettings->bounds = { 12, 12, 320, hh - 12 };
+		pnlControls->bounds = { 12, hh + 12, 320, hh - 36 };
 
 		int wgCount[3], wgSize[3];
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &wgCount[0]);
@@ -163,9 +159,10 @@ public:
 				);
 			}
 
-			NVGpaint imgPaint = nvgImagePattern(ctx, 0.0f, 250.0f, graph->output->size()[0], graph->output->size()[1], 0.0f, image, 1.0f);
+			int y = app.window().size().second - 200;
+			NVGpaint imgPaint = nvgImagePattern(ctx, 0.0f, y, graph->output->size()[0], graph->output->size()[1], 0.0f, image, 1.0f);
 			nvgBeginPath(ctx);
-			nvgRect(ctx, 0.0f, 250.0f, 256, 256);
+			nvgRect(ctx, 0.0f, y, 200, 200);
 			nvgFillPaint(ctx, imgPaint);
 			nvgFill(ctx);
 		}

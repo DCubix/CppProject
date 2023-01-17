@@ -38,12 +38,12 @@ private:
 
 class ColumnLayout : public Layout {
 public:
-	ColumnLayout(int padding = 6) : padding(padding) {}
+	ColumnLayout(int padding = 6, int gap = 6) : padding(padding), gap(gap) {}
 
 	void beginLayout() override;
 	void performLayout(Control* control, Dimension parentSize, size_t index);
 
-	int padding{ 6 };
+	int padding{ 6 }, gap{ 6 };
 private:
 	int m_ypos{ 0 };
 };

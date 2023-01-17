@@ -72,7 +72,7 @@ void ColumnLayout::performLayout(Control* control, Dimension parentSize, size_t 
 	control->bounds.width = parentSize.width - padding * 2;
 	control->bounds.x = padding;
 	control->bounds.y = padding + m_ypos;
-	m_ypos += control->bounds.height;
+	m_ypos += control->bounds.height + gap;
 }
 
 void RowLayout::beginLayout() {
