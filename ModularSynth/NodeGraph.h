@@ -124,6 +124,7 @@ protected:
 
 	std::vector<Connection> getNodeInputConnections(Node* node);
 	std::vector<Connection> getNodeOutputConnections(Node* node);
+	std::vector<size_t> getLeftMostNodes();
 	std::vector<size_t> getRightMostNodes();
 	std::vector<size_t> getPathFrom(Node* node);
 	void buildNodePath();

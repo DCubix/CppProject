@@ -334,6 +334,14 @@ void VisualNode::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgTextAlign(ctx, NVG_ALIGN_MIDDLE);
 	nvgText(ctx, padding, titleHeight / 2 + 1.5f, name().c_str(), nullptr);
 
+#ifdef _DEBUG
+	auto idname = std::to_string(m_node->id());
+	nvgFillColor(ctx, nvgRGBAf(0.0f, 1.0f, 0.0f, 1.0f));
+	nvgFontSize(ctx, titleFontSize);
+	nvgTextAlign(ctx, NVG_ALIGN_MIDDLE);
+	nvgText(ctx, 0.0f, 0.0f, idname.c_str(), nullptr);
+#endif
+
 	float size[4];
 	float posY = titleHeight + padding;
 

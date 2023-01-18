@@ -77,7 +77,7 @@ public:
 
 		// call functions
 		std::stack<Node*> nodes;
-		for (size_t i = 0; i < m_nodePath.size(); i++) {
+		for (size_t i = m_nodePath.size(); i-- > 0;) {
 			nodes.push(get(m_nodePath[i]));
 		}
 
@@ -169,9 +169,10 @@ public:
 	}
 
 	bool checkParams(ShaderGen& gen, GraphicsNode* node, const std::string& inputParamName, SpecialType specialType, ValueType paramType) {
+		auto nodeParams = node->parameters();
+
 		if (node->hasParam(inputParamName)) {
 			auto&& nv = node->param(inputParamName);
-			auto nodeParams = node->parameters();
 
 			if (nv.type == ValueType::image) {
 				// find a texCoord input
@@ -221,7 +222,33 @@ public:
 				gen.convertType(ValueType::vec2, paramType, "cUV");
 			}
 			else {
-				gen.append(std::format("{}(0.0)", typeStr[size_t(paramType)]));
+				// find a texCoord input
+				std::string uvsName = "";
+				SpecialType uvsSpecialType = SpecialType::none;
+				ValueType uvsType = ValueType::none;
+
+				for (auto [fnParam, ndParam] : nodeParams) {
+					if (ndParam.second == SpecialType::textureCoords) {
+						uvsName = ndParam.first;
+						uvsSpecialType = ndParam.second;
+						break;
+					}
+				}
+
+				if (uvsSpecialType != SpecialType::none) {
+					auto conns = getConnectionsToInput(node, node->inputIndex(uvsName));
+					if (!conns.empty()) { // connected
+						auto&& con = conns.front();
+						auto&& nv = con.source->output(con.sourceOutput);
+						gen.convertType(nv.type, ValueType::vec2, std::format("out_{}_{}", con.source->id(), con.sourceOutput));
+					}
+					else {
+						gen.append("cUV");
+					}
+				}
+				else {
+					gen.append(std::format("{}(0.0)", typeStr[size_t(paramType)]));
+				}
 			}
 			return true;
 		}

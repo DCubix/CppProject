@@ -321,3 +321,26 @@ void out_uv(vec2 uv, float repeat, float strength, in vec2 deform, out vec2 duv)
 	}
 
 };
+
+class RadialGradientNode : public GraphicsNode {
+public:
+	std::string library() {
+		return R"(void gen_radial_gradient(in vec2 uv, out float res) {
+	vec2 center = clamp(uv, 0.0, 1.0) * 2.0 - 1.0;
+	res = 1.0 - length(center);
+})";
+	}
+
+	std::string functionName() { return "gen_radial_gradient"; }
+
+	GraphicsNodeParams parameters() {
+		return {
+			{ "uv", { "UV", SpecialType::textureCoords } }
+		};
+	}
+
+	void onCreate() {
+		addOutput("Output", ValueType::scalar);
+		addInput("UV", ValueType::vec2);
+	}
+};
