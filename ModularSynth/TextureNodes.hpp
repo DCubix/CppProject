@@ -13,9 +13,9 @@ public:
 
 	std::string functionName() { return "gen_color"; }
 
-	std::map<std::string, std::string> parameters() {
+	GraphicsNodeParams parameters() {
 		return {
-			{ "color", "Color" }
+			{ "color", { "Color", SpecialType::none } }
 		};
 	}
 
@@ -40,15 +40,16 @@ public:
 
 	std::string functionName() { return "gen_simple_gradient"; }
 
-	std::map<std::string, std::string> parameters() {
+	GraphicsNodeParams parameters() {
 		return {
-			{ "uv", "cUV" },
-			{ "angle", "Angle" }
+			{ "uv", { "UV", SpecialType::textureCoords } },
+			{ "angle", { "Angle", SpecialType::none } }
 		};
 	}
 
 	void onCreate() {
 		addOutput("Output", ValueType::scalar);
+		addInput("UV", ValueType::vec2);
 		addParam("Angle", ValueType::scalar);
 	}
 };
@@ -92,12 +93,12 @@ void opr_mix(float fac, float op, vec4 ca, vec4 cb, out vec4 outColor) {
 
 	std::string functionName() { return "opr_mix"; }
 
-	std::map<std::string, std::string> parameters() {
+	GraphicsNodeParams parameters() {
 		return {
-			{ "fac", "Factor" },
-			{ "op", "Mode" },
-			{ "ca", "A" },
-			{ "cb", "B" }
+			{ "fac", { "Factor", SpecialType::none } },
+			{ "op", { "Mode", SpecialType::none } },
+			{ "ca", { "A", SpecialType::none } },
+			{ "cb", { "B", SpecialType::none } }
 		};
 	}
 
@@ -186,16 +187,17 @@ void gen_noise(in vec2 uv, float scale, float patternX, float patternY, out floa
 })";
 	}
 
-	std::map<std::string, std::string> parameters() {
+	GraphicsNodeParams parameters() {
 		return {
-			{ "uv", "cUV" },
-			{ "scale", "Scale" },
-			{ "patternX", "Pattern X" },
-			{ "patternY", "Pattern Y" }
+			{ "uv", { "UV", SpecialType::textureCoords } },
+			{ "scale", { "Scale", SpecialType::none } },
+			{ "patternX", { "Pattern X", SpecialType::none } },
+			{ "patternY", { "Pattern Y", SpecialType::none } }
 		};
 	}
 
 	void onCreate() {
+		addInput("UV", ValueType::vec2);
 		addParam("Pattern X", ValueType::scalar);
 		addParam("Pattern Y", ValueType::scalar);
 		addParam("Scale", ValueType::scalar);
@@ -221,11 +223,11 @@ public:
 
 	std::string functionName() { return "opr_threshold"; }
 
-	std::map<std::string, std::string> parameters() {
+	GraphicsNodeParams parameters() {
 		return {
-			{ "color", "A" },
-			{ "threshold", "Threshold" },
-			{ "feather", "Feather" }
+			{ "color", { "A", SpecialType::none } },
+			{ "threshold", { "Threshold", SpecialType::none } },
+			{ "feather", { "Feather", SpecialType::none } }
 		};
 	}
 
@@ -251,15 +253,15 @@ public:
 
 	std::string functionName() { return "gen_image"; }
 
-	std::map<std::string, std::string> parameters() {
+	GraphicsNodeParams parameters() {
 		return {
-			//{ "uv", "UV" },
-			{ "img", "Image" }
+			{ "uv", { "UV", SpecialType::textureCoords } },
+			{ "img", { "Image", SpecialType::none } }
 		};
 	}
 
 	void onCreate() {
-		//addInput("UV", ValueType::vec2);
+		addInput("UV", ValueType::vec2);
 		addParam("Image", ValueType::image);
 		addOutput("Output", ValueType::vec4);
 	}
@@ -301,12 +303,12 @@ void out_uv(vec2 uv, float repeat, float strength, in vec2 deform, out vec2 duv)
 
 	std::string functionName() { return "out_uv"; }
 
-	std::map<std::string, std::string> parameters() {
+	GraphicsNodeParams parameters() {
 		return {
-			{ "uv", "cUV" },
-			{ "repeat", "Repeat" },
-			{ "strength", "Strength" },
-			{ "deform", "Deform" }
+			{ "uv", { "cUV", SpecialType::none } },
+			{ "repeat", { "Repeat", SpecialType::none } },
+			{ "strength", { "Strength", SpecialType::none } },
+			{ "deform", { "Deform", SpecialType::none } }
 		};
 	}
 

@@ -167,7 +167,7 @@ void ShaderGen::convertType(ValueType from, ValueType to, const std::string& var
 		switch (from) {
 			case ValueType::scalar: m_body += std::format("vec2({}, 1.0)", varName, varName); break;
 			case ValueType::vec3: m_body += std::format("vec2(rgb_to_float({}), 1.0)", varName, varName); break;
-			case ValueType::vec4: m_body += std::format("vec2(rgb_to_float({}), {}.a)", varName, varName); break;
+			case ValueType::vec4: m_body += std::format("({}.rg * {}.a)", varName, varName); break;
 		}
 	}
 	else if (to == ValueType::vec3) {
@@ -188,7 +188,7 @@ void ShaderGen::convertType(ValueType from, ValueType to, const std::string& var
 
 std::string ShaderGen::appendUniform(ValueType type, const std::string& name, size_t binding) {
 	if (type == ValueType::image) {
-		m_uniforms += std::format("layout (rgba8, binding={}) uniform image2D {};", binding, name);
+		m_uniforms += std::format("readonly layout (rgba32f, binding={}) uniform image2D {};", binding, name);
 	}
 	else {
 		m_uniforms += std::format("uniform {} {};", typeStr[size_t(type)], name);

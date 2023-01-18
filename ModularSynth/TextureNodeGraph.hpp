@@ -34,12 +34,12 @@ public:
 				gen.appendUniform(nv.type, uniName, nv.type == ValueType::image ? (imgId++) : 0);
 
 				// BODY
-				if (nv.type == ValueType::image) {
+				/*if (nv.type == ValueType::image) {
 					auto varName = std::format("pix_{}_{}", node->id(), toCamelCase(paramName));
 					gen.append("\t");
 					gen.appendVariable(ValueType::vec4, varName);
 					gen.append(std::format(" = Tex({}, cUV);\n", uniName));
-				}
+				}*/
 			}
 
 			// declare outputs
@@ -103,7 +103,7 @@ public:
 				if (paramOb.qualifier == ShaderFunctionParam::out) continue;
 
 				// i
-				auto inputParamName = nodeParams[param];
+				auto [ inputParamName, sType ] = nodeParams[param];
 				bool appendComma = false;
 
 				// ii
@@ -119,12 +119,12 @@ public:
 					}
 					else {
 						// iii
-						appendComma = checkParams(gen, node, inputParamName, paramOb.type);
+						appendComma = checkParams(gen, node, inputParamName, sType, paramOb.type);
 					}
 				}
 				// iii
 				else {
-					appendComma = checkParams(gen, node, inputParamName, paramOb.type);
+					appendComma = checkParams(gen, node, inputParamName, sType, paramOb.type);
 				}
 
 				if (appendComma) {
@@ -168,21 +168,50 @@ public:
 		render();
 	}
 
-	bool checkParams(ShaderGen& gen, GraphicsNode* node, const std::string& inputParamName, ValueType paramType) {
+	bool checkParams(ShaderGen& gen, GraphicsNode* node, const std::string& inputParamName, SpecialType specialType, ValueType paramType) {
 		if (node->hasParam(inputParamName)) {
 			auto&& nv = node->param(inputParamName);
+			auto nodeParams = node->parameters();
 
-			std::string varName = "";
-			ValueType type = nv.type;
-			if (type == ValueType::image) {
-				varName = std::format("pix_{}_{}", node->id(), toCamelCase(inputParamName));
-				type = ValueType::vec4;
+			if (nv.type == ValueType::image) {
+				// find a texCoord input
+				std::string uvsName = "";
+				SpecialType uvsSpecialType = SpecialType::none;
+				ValueType uvsType = ValueType::none;
+
+				for (auto [ fnParam, ndParam ] : nodeParams) {
+					if (ndParam.second == SpecialType::textureCoords) {
+						uvsName = ndParam.first;
+						uvsSpecialType = ndParam.second;
+						break;
+					}
+				}
+
+				std::string varName = "cUV";
+				if (uvsSpecialType != SpecialType::none) {
+					auto conns = getConnectionsToInput(node, node->inputIndex(uvsName));
+					if (!conns.empty()) { // connected
+						auto&& con = conns.front();
+						auto&& nv = con.source->output(con.sourceOutput);
+						varName = std::format("out_{}_{}", con.source->id(), con.sourceOutput);
+						uvsType = nv.type;
+					}
+				}
+
+				gen.append(std::format("Tex(param_{}_{}, ", node->id(), toCamelCase(inputParamName)));
+				if (uvsType != ValueType::none) {
+					gen.convertType(uvsType, ValueType::vec2, varName);
+					gen.append(")");
+				}
+				else {
+					gen.append("cUV)");
+				}
 			}
 			else {
-				varName = std::format("param_{}_{}", node->id(), toCamelCase(inputParamName));
+				std::string varName = std::format("param_{}_{}", node->id(), toCamelCase(inputParamName));
+				gen.convertType(nv.type, paramType, varName);
 			}
 
-			gen.convertType(type, paramType, varName);
 			return true;
 		}
 		// iv
@@ -205,10 +234,10 @@ public:
 		if (!generatedShader) return;
 
 		if (!output) {
-			output = std::unique_ptr<Texture>(new Texture({ width, height, 0 }, GL_RGBA8));
+			output = std::unique_ptr<Texture>(new Texture({ width, height, 0 }, GL_RGBA32F));
 		}
 
-		glBindImageTexture(0, output->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA8);
+		glBindImageTexture(0, output->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glUseProgram(generatedShader->id());
 
 		setUniforms();
@@ -228,7 +257,7 @@ private:
 			case ValueType::vec3: shader->uniform<3>(name, { nv.value[0], nv.value[1], nv.value[2] }); break;
 			case ValueType::vec4: shader->uniform<4>(name, nv.value); break;
 			case ValueType::image: {
-				glBindImageTexture(index, GLuint(nv.value[0]), 0, false, 0, GL_READ_ONLY, GL_RGBA8);
+				glBindImageTexture(index, GLuint(nv.value[0]), 0, false, 0, GL_READ_ONLY, GL_RGBA32F);
 			} break;
 		}
 	}

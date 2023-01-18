@@ -9,11 +9,20 @@ constexpr uint32_t previewSize = 128;
 
 std::string toCamelCase(const std::string& text);
 
+enum class SpecialType : uint8_t {
+	none = 0,
+	textureCoords
+	// TODO: add more as needed
+};
+
+using GraphicsNodeParams = std::map<std::string, std::pair<std::string, SpecialType>>;
+
 class GraphicsNode : public Node {
 public:
 	virtual std::string functionName() = 0;
 	virtual std::string library() = 0;
-	virtual std::map<std::string, std::string> parameters() = 0;
+	virtual GraphicsNodeParams parameters() = 0;
+
 	virtual void onCreate() = 0;
 
 	void setup() override final;

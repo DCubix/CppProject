@@ -256,10 +256,10 @@ static Control* gui_ImageNode(GUISystem* gui, VisualNode* node) {
 			}
 
 			int w, h, comp;
-			auto data = stbi_load(fp.result().front().c_str(), &w, &h, &comp, STBI_rgb_alpha);
+			auto data = stbi_loadf(fp.result().front().c_str(), &w, &h, &comp, STBI_rgb_alpha);
 
-			nd->handle = new Texture({ uint32_t(w), uint32_t(h) }, GL_RGBA8);
-			nd->handle->loadFromMemory(data, GL_RGBA, GL_UNSIGNED_BYTE);
+			nd->handle = new Texture({ uint32_t(w), uint32_t(h) }, GL_RGBA32F);
+			nd->handle->loadFromMemory(data, GL_RGBA, GL_FLOAT);
 
 			nd->setParam("Image", float(nd->handle->id()));
 		}
