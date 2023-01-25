@@ -102,3 +102,20 @@ void Panel::clearExtraControls() {
 	}
 	m_children.clear();
 }
+
+void Panel::onMouseDown(int button, int x, int y) {
+	if (button == 1 && m_draggable && m_parent == nullptr) { // only drag top level panels
+		m_dragging = true;
+	}
+}
+
+void Panel::onMouseUp(int button, int x, int y) {
+	m_dragging = false;
+}
+
+void Panel::onMouseMove(int x, int y, int dx, int dy) {
+	if (m_dragging) {
+		bounds.x += dx;
+		bounds.y += dy;
+	}
+}

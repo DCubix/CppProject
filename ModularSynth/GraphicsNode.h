@@ -2,7 +2,10 @@
 
 #include "NodeGraph.h"
 
+#include "olcUTIL_DataFile.h"
+
 #include <memory>
+#include <algorithm>
 #include <map>
 
 constexpr uint32_t previewSize = 128;
@@ -58,6 +61,32 @@ public:
 	bool hasParam(const std::string& name) { return m_params.find(name) != m_params.end(); }
 
 	const std::map<std::string, NodeValue>& params() { return m_params; }
+
+	virtual void saveTo(olc::utils::datafile& df) {
+		df["id"].SetInt(m_id);
+		for (auto& [pName, pData] : m_params) {
+			auto cName = toCamelCase(pName);
+			df[cName].SetReal(pData.value[0], 0);
+			df[cName].SetReal(pData.value[1], 1);
+			df[cName].SetReal(pData.value[2], 2);
+			df[cName].SetReal(pData.value[3], 3);
+		}
+	}
+
+	virtual void loadFrom(olc::utils::datafile& df) {
+		m_id = df["id"].GetInt();
+		NodeGraph::g_NodeID = std::max(m_id, NodeGraph::g_NodeID);
+
+		for (auto& [pName, pData] : m_params) {
+			auto& prop = df[toCamelCase(pName)];
+			pData.value = {
+				float(prop.GetReal(0)),
+				float(prop.GetReal(1)),
+				float(prop.GetReal(2)),
+				float(prop.GetReal(3))
+			};
+		}
+	}
 
 protected:
 	std::map<std::string, NodeValue> m_params;

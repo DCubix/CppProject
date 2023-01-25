@@ -104,6 +104,8 @@ public:
 	bool hasChanges() const;
 	void clearChanges();
 
+	static size_t g_NodeID;
+
 protected:
 	std::vector<std::unique_ptr<Node>> m_nodes;
 	std::vector<Connection> m_connections;
@@ -129,5 +131,4 @@ protected:
 	std::vector<size_t> getPathFrom(Node* node);
 	void buildNodePath();
 
-	static size_t g_NodeID;
 };

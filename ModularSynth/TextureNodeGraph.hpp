@@ -338,6 +338,29 @@ public:
 		glUseProgram(0);
 	}
 
+	void save(olc::utils::datafile& out) {
+		for (auto& node : m_nodes) {
+			auto nodePtr = static_cast<GraphicsNode*>(node.get());
+
+			olc::utils::datafile nodeData{};
+			nodePtr->saveTo(nodeData);
+
+			out[std::format("node_{}", node->id())] = nodeData;
+		}
+
+		// connections
+		size_t i = 0;
+		for (auto& conn : m_connections) {
+			olc::utils::datafile linkData{};
+			linkData["source"].SetInt(conn.source->id());
+			linkData["destination"].SetInt(conn.destination->id());
+			linkData["sourceOutput"].SetInt(conn.sourceOutput);
+			linkData["destinationInput"].SetInt(conn.destinationInput);
+			out[std::format("conn_{}", i)] = linkData;
+			i++;
+		}
+	}
+
 private:
 	void setUniform(const std::string& name, const NodeValue& nv, size_t index) {
 		auto shader = generatedShader.get();

@@ -74,6 +74,28 @@ public:
 		gui = new GUISystem();
 		gui->attachToApplication(app);
 
+		Button* btnSave = new Button();
+		btnSave->text = "Save Test";
+		btnSave->bounds = { 10, 10, 120, 22 };
+		btnSave->onPress = [=]() {
+			olc::utils::datafile out{};
+			graph->save(out);
+			for (auto& [nodeId, type] : nodeTypeStorage) {
+				out[std::format("node_{}", nodeId)]["type"].SetString(type);
+			}
+
+			auto fp = pfd::save_file(
+				"Save Node Graph",
+				pfd::path::home(),
+				{ "Node Graph Files", "*.dat" },
+				pfd::opt::none
+			);
+			if (!fp.result().empty()) {
+				out.Write(out, fp.result());
+			}
+		};
+		gui->addControl(btnSave);
+
 		Panel* pnlSettings = new Panel();
 		pnlSettings->title = "Settings";
 		pnlSettings->setLayout(new ColumnLayout());
@@ -112,9 +134,10 @@ public:
 
 			Button* btn = new Button();
 			gui->addControl(btn);
-			btn->text = std::format("[+] {}", ctor.name);
+			btn->text = ctor.name;
 			btn->onPress = [=]() {
-				createNewTextureNode(ned, ctor.code);
+				auto node = createNewTextureNode(ned, ctor.code);
+				nodeTypeStorage[node->node()->id()] = ctor.code;
 			};
 			btn->bounds = { 0, 0, 0, 24 };
 			pnlControls->addChild(btn);
@@ -179,6 +202,7 @@ public:
 	NVGcontext* ctx;
 
 	TextureNodeGraph* graph;
+	std::map<size_t, std::string> nodeTypeStorage;
 
 	GUISystem* gui;
 	Control* singleNodeEditor{ nullptr };
