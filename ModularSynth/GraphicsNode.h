@@ -21,6 +21,7 @@ class GraphicsNode : public Node {
 public:
 	virtual std::string functionName() = 0;
 	virtual std::string library() = 0;
+	virtual bool multiPassNode() { return false; }
 	virtual GraphicsNodeParams parameters() = 0;
 
 	virtual void onCreate() = 0;

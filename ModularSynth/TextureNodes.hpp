@@ -344,3 +344,40 @@ public:
 		addInput("UV", ValueType::vec2);
 	}
 };
+
+class NormalMapNode : public GraphicsNode {
+public:
+	bool multiPassNode() {
+		return true;
+	}
+
+	std::string library() {
+		return R"(void gen_normal_map(in vec2 uv, float scale, out vec3 res) {
+	vec2 step = 1.0 / vec2(imageSize(bOutput));
+
+	float height = rgb_to_float($TREE(uv).rgb);
+	float s1 = rgb_to_float($TREE(uv + vec2(step.x, 0.0)).rgb);
+	float s2 = rgb_to_float($TREE(uv + vec2(0.0, step.y)).rgb);
+
+	vec2 dxy = height - vec2(s1, s2);
+
+	res = normalize(vec3(dxy * scale / step, 1.0)) * 0.5 + 0.5;
+})";
+	}
+
+	std::string functionName() { return "gen_normal_map"; }
+
+	GraphicsNodeParams parameters() {
+		return {
+			{ "uv", { "cUV", SpecialType::none } },
+			{ "scale", { "Scale", SpecialType::none } }
+		};
+	}
+
+	void onCreate() {
+		addOutput("Output", ValueType::vec3);
+		addInput("Source", ValueType::vec4);
+		addParam("Scale", ValueType::scalar);
+		setParam("Scale", 0.1f);
+	}
+};

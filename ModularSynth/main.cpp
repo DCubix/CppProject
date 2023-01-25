@@ -159,11 +159,11 @@ public:
 				);
 			}
 
-			int x = app.window().size().first - 200;
-			int y = app.window().size().second - 200;
-			NVGpaint imgPaint = nvgImagePattern(ctx, x, y, 200, 200, 0.0f, image, 1.0f);
+			int x = app.window().size().first - 300;
+			int y = app.window().size().second - 300;
+			NVGpaint imgPaint = nvgImagePattern(ctx, x, y, 300, 300, 0.0f, image, 1.0f);
 			nvgBeginPath(ctx);
-			nvgRect(ctx, x, y, 200, 200);
+			nvgRect(ctx, x, y, 300, 300);
 			nvgFillPaint(ctx, imgPaint);
 			nvgFill(ctx);
 		}

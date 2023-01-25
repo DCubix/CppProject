@@ -19,6 +19,7 @@
 static constexpr Color generatorNodeColor = hex2rgbf(0x47b394);
 static constexpr Color operatorNodeColor = hex2rgbf(0xb86335);
 static constexpr Color externalNodeColor = hex2rgbf(0x7a30ba);
+static constexpr Color multisampleNodeColor = hex2rgbf(0x59cf36);
 
 /* UI Editing */
 using GuiBuilder = std::function<Control* (GUISystem*, VisualNode*)>;
@@ -301,6 +302,28 @@ static Control* gui_UVNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
+static Control* gui_NormalMapNode(GUISystem* gui, VisualNode* node) {
+	Panel* pnl = new Panel();
+	pnl->drawBackground(false);
+	pnl->bounds = { 0, 0, 0, 60 };
+	pnl->setLayout(new ColumnLayout());
+	gui->addControl(pnl);
+
+	GraphicsNode* nd = (GraphicsNode*)node->node();
+
+	auto ctrl = gui_ValueSlider(
+		gui, "Scale", nd->param("Scale").value[0],
+		[=](float v) {
+			nd->setParam("Scale", v);
+		},
+		0.01f, 1.0f, 0.01f
+	);
+
+	pnl->addChild(ctrl);
+
+	return pnl;
+}
+
 static NodeContructor nodeTypes[] = {
 	{ "COL", "Color", NodeCtor(ColorNode, generatorNodeColor), gui_ColorNode },
 	{ "MIX", "Mix", NodeCtor(MixNode, operatorNodeColor), gui_MixNode },
@@ -310,6 +333,7 @@ static NodeContructor nodeTypes[] = {
 	{ "IMG", "Image", NodeCtor(ImageNode, externalNodeColor), gui_ImageNode },
 	{ "UVS", "UV", NodeCtor(UVNode, generatorNodeColor), gui_UVNode },
 	{ "RGR", "Radial Gradient", NodeCtor(RadialGradientNode, generatorNodeColor), nullptr },
+	{ "NRM", "Normal Map", NodeCtor(NormalMapNode, multisampleNodeColor), gui_NormalMapNode },
 	{ "", "", nullptr, nullptr }
 };
 

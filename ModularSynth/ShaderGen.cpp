@@ -108,6 +108,25 @@ void ShaderGen::loadLib(const std::string& src) {
 	}
 }
 
+void ShaderGen::beginCodeBlock() {
+	m_userCodeBlocks.push("");
+}
+
+void ShaderGen::endCodeBlock(Target target) {
+	auto code = m_userCodeBlocks.top(); m_userCodeBlocks.pop();
+	m_targets[target] += code;
+}
+
+void ShaderGen::beginFunctionBlock(const std::string& signature) {
+	m_userCodeBlocks.push(signature + " {\n");
+}
+
+void ShaderGen::endFunctionBlock(Target target) {
+	auto code = m_userCodeBlocks.top(); m_userCodeBlocks.pop();
+	m_targets[target] += code;
+	m_targets[target] += "}\n";
+}
+
 void ShaderGen::pasteFunction(const std::string& funcName, const std::string& shaderCode) {
 	if (std::find(m_pasted.begin(), m_pasted.end(), funcName) != m_pasted.end()) {
 		return;
@@ -146,54 +165,57 @@ void ShaderGen::pasteFunction(const std::string& funcName, const std::string& sh
 		}
 	}
 
-	m_defs += src;
-	m_defs += '\n\n';
+	m_targets[Target::definitions] += src;
+	m_targets[Target::definitions] += "\n\n";
 
 	m_pasted.push_back(funcName);
 }
 
 void ShaderGen::convertType(ValueType from, ValueType to, const std::string& varName) {
+	if (m_userCodeBlocks.empty()) return;
+	auto&& targetStr = m_userCodeBlocks.top();
+
 	if (from == to) {
-		m_body += varName;
+		targetStr += varName;
 	}
 	else if (to == ValueType::scalar) {
 		switch (from) {
-			case ValueType::vec2: m_body += std::format("{}.r", varName); break;
-			case ValueType::vec3: m_body += std::format("rgb_to_float({})", varName); break;
-			case ValueType::vec4: m_body += std::format("rgba_to_float({})", varName); break;
+			case ValueType::vec2: targetStr += std::format("{}.r", varName); break;
+			case ValueType::vec3: targetStr += std::format("rgb_to_float({})", varName); break;
+			case ValueType::vec4: targetStr += std::format("rgba_to_float({})", varName); break;
 		}
 	}
 	else if (to == ValueType::vec2) {
 		switch (from) {
-			case ValueType::scalar: m_body += std::format("vec2({}, 1.0)", varName, varName); break;
-			case ValueType::vec3: m_body += std::format("vec2(rgb_to_float({}), 1.0)", varName, varName); break;
-			case ValueType::vec4: m_body += std::format("({}.rg * {}.a)", varName, varName); break;
+			case ValueType::scalar: targetStr += std::format("vec2({}, 1.0)", varName, varName); break;
+			case ValueType::vec3: targetStr += std::format("vec2(rgb_to_float({}), 1.0)", varName, varName); break;
+			case ValueType::vec4: targetStr += std::format("({}.rg * {}.a)", varName, varName); break;
 		}
 	}
 	else if (to == ValueType::vec3) {
 		switch (from) {
-			case ValueType::scalar: m_body += std::format("vec3({})", varName); break;
-			case ValueType::vec2: m_body += std::format("vec3({}.r)", varName); break;
-			case ValueType::vec4: m_body += std::format("{}.rgb", varName, varName); break;
+			case ValueType::scalar: targetStr += std::format("vec3({})", varName); break;
+			case ValueType::vec2: targetStr += std::format("vec3({}.r)", varName); break;
+			case ValueType::vec4: targetStr += std::format("{}.rgb", varName, varName); break;
 		}
 	}
 	else { // vec4
 		switch (from) {
-			case ValueType::scalar: m_body += std::format("vec4(vec3({}), 1.0)", varName); break;
-			case ValueType::vec2: m_body += std::format("vec4(vec3({}.r), {}.g)", varName, varName); break;
-			case ValueType::vec3: m_body += std::format("vec4({}, 1.0)", varName); break;
+			case ValueType::scalar: targetStr += std::format("vec4(vec3({}), 1.0)", varName); break;
+			case ValueType::vec2: targetStr += std::format("vec4(vec3({}.r), {}.g)", varName, varName); break;
+			case ValueType::vec3: targetStr += std::format("vec4({}, 1.0)", varName); break;
 		}
 	}
 }
 
 std::string ShaderGen::appendUniform(ValueType type, const std::string& name, size_t binding) {
 	if (type == ValueType::image) {
-		m_uniforms += std::format("readonly layout (rgba32f, binding={}) uniform image2D {};", binding, name);
+		m_targets[Target::uniforms] += std::format("readonly layout (rgba32f, binding={}) uniform image2D {};", binding, name);
 	}
 	else {
-		m_uniforms += std::format("uniform {} {};", typeStr[size_t(type)], name);
+		m_targets[Target::uniforms] += std::format("uniform {} {};", typeStr[size_t(type)], name);
 	}
-	m_uniforms += '\n';
+	m_targets[Target::uniforms] += '\n';
 	return name;
 }
 
@@ -201,22 +223,24 @@ std::string ShaderGen::appendVariable(ValueType type, const std::string& name) {
 	if (type == ValueType::image) {
 		type = ValueType::vec4;
 	}
-	m_body += std::format("{} {}", typeStr[size_t(type)], name);
+	if (m_userCodeBlocks.empty()) return "";
+	m_userCodeBlocks.top() += std::format("{} {}", typeStr[size_t(type)], name);
 	return name;
 }
 
-void ShaderGen::appendUniform(const std::string& str) {
-	m_uniforms += str;
-}
-
 void ShaderGen::append(const std::string& str) {
-	m_body += str;
+	if (m_userCodeBlocks.empty()) return;
+	m_userCodeBlocks.top() += str;
 }
 
 std::string ShaderGen::generate() {
 	std::string src = shaderTemplate;
-	src.replace(src.find("<uniforms>"), 10, m_uniforms);
-	src.replace(src.find("<defs>"), 6, m_defs);
-	src.replace(src.find("<body>"), 6, m_body);
+	src.replace(src.find("<uniforms>"), 10, m_targets[Target::uniforms]);
+	src.replace(src.find("<defs>"), 6, m_targets[Target::definitions]);
+	src.replace(src.find("<body>"), 6, m_targets[Target::body]);
 	return src;
+}
+
+void ShaderGen::indent() {
+	append(m_userCodeBlocks.empty() ? "" : std::string(m_userCodeBlocks.size(), '\t'));
 }

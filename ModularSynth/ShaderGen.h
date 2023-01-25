@@ -3,6 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <regex>
+#include <stack>
 
 #include "NodeGraph.h"
 
@@ -32,6 +33,7 @@ vec3 hash3(vec2 p) {
 }
 
 #define Tex(name, uv) imageLoad(name, ivec2(uv * vec2(imageSize(name).xy)))
+#define TexP(name, uv, ox, oy) imageLoad(name, ivec2(uv * vec2(imageSize(name).xy)) + ivec2(ox, oy))
 #define PI 3.141592654
 
 float rand(float n) { return fract(sin(n) * 43758.5453123); }
@@ -76,27 +78,42 @@ struct ShaderFunction {
 
 class ShaderGen {
 public:
+	enum class Target {
+		body = 0,
+		definitions,
+		uniforms
+	};
+
 	void loadLib(const std::string& src);
 
-	std::string appendUniform(ValueType type, const std::string& name, size_t binding = 0);
-	std::string appendVariable(ValueType type, const std::string& name);
-
-	void appendUniform(const std::string& str);
-	void append(const std::string& str);
+	void beginCodeBlock();
+	void endCodeBlock(Target target);
+	
+	void beginFunctionBlock(const std::string& signature);
+	void endFunctionBlock(Target target);
 
 	void pasteFunction(const std::string& funcName, const std::string& shaderCode);
+	std::string appendUniform(ValueType type, const std::string& name, size_t binding = 0);
+
+	void append(const std::string& str);
+	std::string appendVariable(ValueType type, const std::string& name);
 	void convertType(ValueType from, ValueType to, const std::string& varName);
+	void indent();
 
 	std::string generate();
 
 	const ShaderFunction& getFunction(const std::string& name) { return m_shaderLib[name]; }
+	std::string& target(Target target) { return m_targets[target]; }
 
-private:
-	std::string m_body, m_defs, m_uniforms;
+protected:
+	std::unordered_map<Target, std::string> m_targets;
+	std::stack<std::string> m_userCodeBlocks;
 
 	size_t m_tmpIndex{ 0 };
+
 	std::unordered_map<std::string, ShaderFunction> m_shaderLib;
 	std::vector<std::string> m_pasted;
+
 
 };
 
