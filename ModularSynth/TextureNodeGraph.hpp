@@ -341,22 +341,19 @@ public:
 	void save(olc::utils::datafile& out) {
 		for (auto& node : m_nodes) {
 			auto nodePtr = static_cast<GraphicsNode*>(node.get());
+			std::string nodeName = std::format("node_{}", node->id());
 
-			olc::utils::datafile nodeData{};
-			nodePtr->saveTo(nodeData);
-
-			out[std::format("node_{}", node->id())] = nodeData;
+			nodePtr->saveTo(out["nodes"][nodeName]);
 		}
 
 		// connections
 		size_t i = 0;
 		for (auto& conn : m_connections) {
-			olc::utils::datafile linkData{};
+			olc::utils::datafile& linkData = out["connections"][std::format("conn_{}", i)];
 			linkData["source"].SetInt(conn.source->id());
 			linkData["destination"].SetInt(conn.destination->id());
 			linkData["sourceOutput"].SetInt(conn.sourceOutput);
 			linkData["destinationInput"].SetInt(conn.destinationInput);
-			out[std::format("conn_{}", i)] = linkData;
 			i++;
 		}
 	}

@@ -111,6 +111,16 @@ public:
 		return nullptr;
 	}
 
+	VisualNode* getFromOriginalNodeId(size_t id) {
+		auto pos = std::find_if(m_nodes.begin(), m_nodes.end(), [id](const std::unique_ptr<VisualNode>& ob) {
+			return ob->node()->id() == id;
+			});
+		if (pos != m_nodes.end()) {
+			return pos->get();
+		}
+		return nullptr;
+	}
+
 	void connect(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput);
 	void removeConnection(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput);
 

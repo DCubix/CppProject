@@ -34,7 +34,9 @@ struct NodeContructor {
 	GuiBuilder onGui;
 };
 
-#define NodeCtor(T, c) [](NodeEditor* editor, const std::string& name, const std::string& code) { return editor->create<T, VisualNode>(name, code, c); }
+#define NodeCtor(T, c) [](NodeEditor* editor, const std::string& name, const std::string& code) { \
+	return editor->create<T, VisualNode>(name, code, c);\
+}
 
 static Control* gui_ValueSlider(
 	GUISystem* gui,

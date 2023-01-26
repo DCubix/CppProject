@@ -125,7 +125,13 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgArcTo(ctx, bounds.x, bounds.y + bounds.height, bounds.x + 10, bounds.y + bounds.height, 10.0f);
 
 		nvgMoveTo(ctx, bounds.x + bounds.width, bounds.y + bounds.height - 10);
-		nvgArcTo(ctx, bounds.x + bounds.width, bounds.y + bounds.height, bounds.x + bounds.width - 10, bounds.y + bounds.height, 10.0f);
+		nvgArcTo(
+			ctx,
+			bounds.x + bounds.width,
+			bounds.y + bounds.height,
+			bounds.x + bounds.width - 10,
+			bounds.y + bounds.height, 10.0f
+		);
 
 		nvgStrokeWidth(ctx, 6.0f);
 		nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.3f));

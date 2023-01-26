@@ -29,28 +29,9 @@
 
 #include <iostream>
 
-class ControlTest : public Control {
-public:
-
-	void onDraw(NVGcontext* ctx, float deltaTime) override {
-		float v = anim.value(Curves::easeInOutCubic, deltaTime);
-		Rect b = bounds;
-		nvgBeginPath(ctx);
-		nvgRoundedRect(ctx, v, v, b.width - v*2, b.height - v*2, 6.0f);
-		nvgStrokeColor(ctx, nvgRGB(0, 255, 255));
-		nvgStroke(ctx);
-	}
-
-	void onMouseDown(int button, int x, int y) override {
-		anim.forward(3.0f, 0.0f, 0.3f);
-	}
-
-	void onMouseUp(int button, int x, int y) override {
-		anim.reverse(0.3f);
-	}
-
-	Animator<float> anim{};
-
+struct MenuItem {
+	std::string text;
+	std::function<void()> action;
 };
 
 
@@ -71,45 +52,59 @@ public:
 		nvgCreateFont(ctx, "default", "fonts/os_regular.ttf");
 		nvgFontFace(ctx, "default");
 
+		// UI layout
+		SlicedRect layoutMain{ 0, 0, app.window().size().first, app.window().size().second };
+
+		SlicedRect topBar = layoutMain.cutTop(42);
+		SlicedRect bodyArea = layoutMain;
+
+		SlicedRect sideBarArea = bodyArea.cutLeft(320);
+		SlicedRect nodeGraphArea = bodyArea;
+
+		SlicedRect controlsArea = sideBarArea.cutTop(400);
+		SlicedRect settingsArea = sideBarArea;
+		//
+
 		gui = new GUISystem();
 		gui->attachToApplication(app);
-
-		Button* btnSave = new Button();
-		btnSave->text = "Save Test";
-		btnSave->bounds = { 10, 10, 120, 22 };
-		btnSave->onPress = [=]() {
-			olc::utils::datafile out{};
-			graph->save(out);
-			for (auto& [nodeId, type] : nodeTypeStorage) {
-				out[std::format("node_{}", nodeId)]["type"].SetString(type);
-			}
-
-			auto fp = pfd::save_file(
-				"Save Node Graph",
-				pfd::path::home(),
-				{ "Node Graph Files", "*.dat" },
-				pfd::opt::none
-			);
-			if (!fp.result().empty()) {
-				out.Write(out, fp.result());
-			}
-		};
-		gui->addControl(btnSave);
 
 		Panel* pnlSettings = new Panel();
 		pnlSettings->title = "Settings";
 		pnlSettings->setLayout(new ColumnLayout());
+		pnlSettings->bounds = settingsArea.toRect().inflate(-4);
 		gui->addControl(pnlSettings);
 
 		Panel* pnlControls = new Panel();
 		pnlControls->title = "Controls";
-		pnlControls->setLayout(new ColumnLayout());
+		pnlControls->setLayout(new ColumnFlowLayout());
+		pnlControls->bounds = controlsArea.toRect().inflate(-4);
 		gui->addControl(pnlControls);
 
-		NodeEditor* ned = new NodeEditor(new TextureNodeGraph());
+		Panel* pnlMenu = new Panel();
+		pnlMenu->drawBackground(false);
+		pnlMenu->bounds = topBar.toRect().inflate(-4);
+		gui->addControl(pnlMenu);
+
+		// menus
+		MenuItem menu[] = {
+			{ "Open", [=]() { menu_OpenGraph(); } },
+			{ "Save", [=]() { menu_SaveGraph(); } },
+		};
+
+		for (const auto& item : menu) {
+			Button* menuButton = new Button();
+			menuButton->text = item.text;
+			menuButton->bounds = topBar.cutLeft(80).toRect().inflate(-4);
+			menuButton->onPress = item.action;
+			gui->addControl(menuButton);
+			pnlMenu->addChild(menuButton);
+		}
+		//
+
+		ned = new NodeEditor(new TextureNodeGraph());
 		graph = static_cast<TextureNodeGraph*>(ned->graph());
 
-		ned->bounds = { 340, 12, int(app.window().size().first) - 352, int(app.window().size().second) - 24 };
+		ned->bounds = nodeGraphArea.toRect().inflate(-4);
 		gui->addControl(ned);
 
 		ned->onSelect = [=](VisualNode* node) {
@@ -137,15 +132,11 @@ public:
 			btn->text = ctor.name;
 			btn->onPress = [=]() {
 				auto node = createNewTextureNode(ned, ctor.code);
-				nodeTypeStorage[node->node()->id()] = ctor.code;
+				nodeTypeStorage[node->node()->id()] = { ctor.code, node->id() };
 			};
 			btn->bounds = { 0, 0, 0, 24 };
 			pnlControls->addChild(btn);
 		}
-
-		int hh = app.window().size().second / 2;
-		pnlSettings->bounds = { 12, 12, 320, hh - 12 };
-		pnlControls->bounds = { 12, hh + 12, 320, hh - 36 };
 
 		int wgCount[3], wgSize[3];
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &wgCount[0]);
@@ -199,10 +190,69 @@ public:
 		delete gui;
 	}
 
+	void menu_OpenGraph() {
+		auto fp = pfd::open_file(
+			"Open Node Graph",
+			pfd::path::home(),
+			{ "Node Graph Files", "*.dat" },
+			pfd::opt::none
+		);
+		if (!fp.result().empty()) {
+			olc::utils::datafile in{};
+			in.Read(in, fp.result().front());
+
+			// create nodes
+			for (size_t i = 0; i < in["nodes"].GetArraySize(); i++) {
+				auto&& val = in["nodes"].GetArrayItem(i);
+				auto&& node = createNewTextureNode(ned, val["type"].GetString());
+				node->position.x = val["position"].GetInt(0);
+				node->position.y = val["position"].GetInt(1);
+				static_cast<GraphicsNode*>(node->node())->loadFrom(val);
+
+				nodeTypeStorage[node->node()->id()] = { val["type"].GetString(), node->id() };
+			}
+
+			for (size_t i = 0; i < in["connections"].GetArraySize(); i++) {
+				auto&& val = in["connections"].GetArrayItem(i);
+				ned->connect(
+					ned->getFromOriginalNodeId(val["source"].GetInt()),
+					val["sourceOutput"].GetInt(),
+					ned->getFromOriginalNodeId(val["destination"].GetInt()),
+					val["destinationInput"].GetInt()
+				);
+			}
+		}
+	}
+
+	void menu_SaveGraph() {
+		olc::utils::datafile out{};
+
+		graph->save(out);
+		for (auto& [nodeId, p] : nodeTypeStorage) {
+			auto [type, visualNodeId] = p;
+			out["nodes"][std::format("node_{}", nodeId)]["type"].SetString(type);
+
+			auto vnode = ned->get(visualNodeId);
+			out["nodes"][std::format("node_{}", nodeId)]["position"].SetInt(vnode->position.x, 0);
+			out["nodes"][std::format("node_{}", nodeId)]["position"].SetInt(vnode->position.y, 1);
+		}
+
+		auto fp = pfd::save_file(
+			"Save Node Graph",
+			pfd::path::home(),
+			{ "Node Graph Files", "*.dat" },
+			pfd::opt::none
+		);
+		if (!fp.result().empty()) {
+			out.Write(out, fp.result());
+		}
+	}
+
 	NVGcontext* ctx;
 
+	NodeEditor* ned;
 	TextureNodeGraph* graph;
-	std::map<size_t, std::string> nodeTypeStorage;
+	std::map<size_t, std::pair<std::string, size_t>> nodeTypeStorage;
 
 	GUISystem* gui;
 	Control* singleNodeEditor{ nullptr };

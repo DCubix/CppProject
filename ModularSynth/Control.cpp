@@ -94,9 +94,43 @@ bool Rect::hasPoint(Point point) {
 		   point.y <= y + height;
 }
 
-void Rect::inflate(int amount) {
+Rect& Rect::inflate(int amount) {
 	x -= amount;
 	y -= amount;
 	width += amount * 2;
 	height += amount * 2;
+	return *this;
 }
+
+SlicedRect SlicedRect::cutLeft(int size) {
+	int minX = minx;
+	minx = std::min(maxx, minx + size);
+	return { minX, miny, minx, maxy };
+}
+
+SlicedRect SlicedRect::cutRight(int size) {
+	int maxX = maxx;
+	maxx = std::max(minx, maxx - size);
+	return { maxx, miny, maxX, maxy };
+}
+
+SlicedRect SlicedRect::cutTop(int size) {
+	int minY = miny;
+	miny = std::min(maxy, miny + size);
+	return { minx, minY, maxx, miny };
+}
+
+SlicedRect SlicedRect::cutBottom(int size) {
+	int maxY = maxy;
+	maxy = std::max(miny, maxy - size);
+	return { minx, maxy, maxx, maxY };
+}
+
+Rect SlicedRect::toRect() {
+	return { minx, miny, maxx - minx, maxy - miny };
+}
+
+Rect SlicedRect::toRectRelative() {
+	return { 0, 0, maxx - minx, maxy - miny };
+}
+

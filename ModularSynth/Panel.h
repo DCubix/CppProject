@@ -67,3 +67,23 @@ private:
 	int m_xpos{ 0 };
 };
 
+class ColumnFlowLayout : public Layout {
+public:
+	ColumnFlowLayout(
+		int columns = 2,
+		int padding = 6,
+		int gap = 6,
+		int controlHeight = 24
+	) : controlHeight(controlHeight),
+		columns(columns),
+		padding(padding),
+		gap(gap)
+	{}
+
+	void beginLayout() override;
+	void performLayout(Control* control, Dimension parentSize, size_t index);
+
+	int padding{ 6 }, columns{ 2 }, gap{ 6 }, controlHeight{ 24 };
+private:
+	int m_xpos{ 0 }, m_ypos{ 0 };
+};

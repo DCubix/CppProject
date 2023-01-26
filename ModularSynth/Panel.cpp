@@ -64,6 +64,30 @@ void Panel::removeChild(Control* control) {
 	);
 }
 
+void Panel::clearExtraControls() {
+	for (auto&& child : m_children) {
+		child->parent(nullptr);
+	}
+	m_children.clear();
+}
+
+void Panel::onMouseDown(int button, int x, int y) {
+	if (button == 1 && m_draggable && m_parent == nullptr) { // only drag top level panels
+		m_dragging = true;
+	}
+}
+
+void Panel::onMouseUp(int button, int x, int y) {
+	m_dragging = false;
+}
+
+void Panel::onMouseMove(int x, int y, int dx, int dy) {
+	if (m_dragging) {
+		bounds.x += dx;
+		bounds.y += dy;
+	}
+}
+
 void ColumnLayout::beginLayout() {
 	m_ypos = 0;
 }
@@ -96,26 +120,27 @@ void RowLayout::performLayout(Control* control, Dimension parentSize, size_t ind
 	m_xpos += control->bounds.width + gap;
 }
 
-void Panel::clearExtraControls() {
-	for (auto&& child : m_children) {
-		child->parent(nullptr);
+void ColumnFlowLayout::beginLayout() {
+	m_xpos = 0;
+	m_ypos = 0;
+}
+
+void ColumnFlowLayout::performLayout(Control* control, Dimension parentSize, size_t index) {
+	const int gapTotal = (columns - 1) * gap;
+	const int actualParentWidth = parentSize.width - gapTotal - padding * 2;
+	const int columnWidth = actualParentWidth / columns;
+
+	control->bounds.height = controlHeight;
+	control->bounds.width = columnWidth;
+	control->bounds.x = m_xpos + padding;
+	control->bounds.y = m_ypos + padding;
+
+	int next = control->bounds.width + gap;
+	if (m_xpos + next >= actualParentWidth) {
+		m_xpos = 0;
+		m_ypos += controlHeight + gap;
 	}
-	m_children.clear();
-}
-
-void Panel::onMouseDown(int button, int x, int y) {
-	if (button == 1 && m_draggable && m_parent == nullptr) { // only drag top level panels
-		m_dragging = true;
-	}
-}
-
-void Panel::onMouseUp(int button, int x, int y) {
-	m_dragging = false;
-}
-
-void Panel::onMouseMove(int x, int y, int dx, int dy) {
-	if (m_dragging) {
-		bounds.x += dx;
-		bounds.y += dy;
+	else {
+		m_xpos += next;
 	}
 }

@@ -149,6 +149,17 @@ namespace olc::utils
 			return GetProperty(name + "[" + std::to_string(nIndex) + "]");
 		}
 
+		// Get the number of elements in this datafile
+		inline size_t GetArraySize() const
+		{
+			return m_vecObjects.size();
+		}
+
+		// Get a single element from this datafile
+		inline datafile& GetArrayItem(size_t index) {
+			return m_vecObjects[index].second;
+		}
+
 	public:
 		// Writes a "datafile" node (and all of its child nodes and properties) recursively
 		// to a file.

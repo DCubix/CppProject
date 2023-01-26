@@ -14,10 +14,22 @@ enum class HorizontalAlignment {
 };
 
 struct Rect {
-	int x{ 0 }, y{ 0 }, width{100}, height{100};
+	int x{ 0 }, y{ 0 }, width{ 100 }, height{ 100 };
 
 	bool hasPoint(Point point);
-	void inflate(int amount = 1);
+	Rect& inflate(int amount = 1);
+};
+
+struct SlicedRect {
+	int minx{ 0 }, miny{ 0 }, maxx{ 100 }, maxy{ 100 };
+
+	SlicedRect cutLeft(int size);
+	SlicedRect cutRight(int size);
+	SlicedRect cutTop(int size);
+	SlicedRect cutBottom(int size);
+
+	Rect toRect();
+	Rect toRectRelative();
 };
 
 struct Dimension {
