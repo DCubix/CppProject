@@ -326,6 +326,67 @@ static Control* gui_NormalMapNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
+static Control* gui_CircleShapeNode(GUISystem* gui, VisualNode* node) {
+	Panel* pnl = new Panel();
+	pnl->drawBackground(false);
+	pnl->bounds = { 0, 0, 0, 60 };
+	pnl->setLayout(new ColumnLayout());
+	gui->addControl(pnl);
+
+	GraphicsNode* nd = (GraphicsNode*)node->node();
+
+	auto ctrl = gui_ValueSlider(
+		gui, "Radius", nd->param("Radius").value[0],
+		[=](float v) {
+			nd->setParam("Radius", v);
+		},
+		0.01f, 1.0f, 0.01f
+	);
+
+	pnl->addChild(ctrl);
+
+	return pnl;
+}
+
+static Control* gui_BoxShapeNode(GUISystem* gui, VisualNode* node) {
+	Panel* pnl = new Panel();
+	pnl->drawBackground(false);
+	pnl->bounds = { 0, 0, 0, 0 };
+	pnl->setLayout(new ColumnLayout());
+	gui->addControl(pnl);
+
+	const std::string labelsCorners[] = { "Bot. Right", "Top Right", "Bot. Left", "Top Left" };
+	const std::string labelsBounds[] = { "Width", "Height" };
+
+	GraphicsNode* nd = (GraphicsNode*)node->node();
+
+	for (size_t i = 0; i < 2; i++) {
+		auto ctrl = gui_ValueSlider(
+			gui, labelsBounds[i], nd->param("Bounds").value[i],
+			[=](float v) {
+				nd->setParam("Bounds", i, v);
+			},
+			0.0f, 1.0f, 0.01f
+		);
+		pnl->addChild(ctrl);
+		pnl->bounds.height += 30;
+	}
+
+	for (size_t i = 0; i < 4; i++) {
+		auto ctrl = gui_ValueSlider(
+			gui, labelsCorners[i], nd->param("Border Radius").value[i],
+			[=](float v) {
+				nd->setParam("Border Radius", i, v);
+			},
+			0.0f, 1.0f, 0.01f
+		);
+		pnl->addChild(ctrl);
+		pnl->bounds.height += 30;
+	}
+
+	return pnl;
+}
+
 static NodeContructor nodeTypes[] = {
 	{ "COL", "Color", NodeCtor(ColorNode, generatorNodeColor), gui_ColorNode },
 	{ "MIX", "Mix", NodeCtor(MixNode, operatorNodeColor), gui_MixNode },
@@ -336,6 +397,10 @@ static NodeContructor nodeTypes[] = {
 	{ "UVS", "UV", NodeCtor(UVNode, generatorNodeColor), gui_UVNode },
 	{ "RGR", "Radial Gradient", NodeCtor(RadialGradientNode, generatorNodeColor), nullptr },
 	{ "NRM", "Normal Map", NodeCtor(NormalMapNode, multisampleNodeColor), gui_NormalMapNode },
+
+	{ "SCIRCLE", "Circle", NodeCtor(CircleShapeNode, generatorNodeColor), gui_CircleShapeNode },
+	{ "SBOX", "Box", NodeCtor(BoxShapeNode, generatorNodeColor), gui_BoxShapeNode },
+
 	{ "", "", nullptr, nullptr }
 };
 

@@ -381,3 +381,66 @@ public:
 		setParam("Scale", 0.1f);
 	}
 };
+
+class CircleShapeNode : public GraphicsNode {
+public:
+	std::string library() {
+		return R"(
+void gen_shape_circle(in vec2 uv, float r, out float res) {
+	vec2 p = clamp(uv, 0.0, 1.0) * 2.0 - 1.0;
+	res = 1.0 - (length(p) - r);
+})";
+	}
+
+	std::string functionName() { return "gen_shape_circle"; }
+
+	GraphicsNodeParams parameters() {
+		return {
+			{ "uv", { "UV", SpecialType::textureCoords } },
+			{ "r", { "Radius", SpecialType::none } }
+		};
+	}
+
+	void onCreate() {
+		addOutput("Output", ValueType::scalar);
+		addInput("UV", ValueType::vec2);
+		addParam("Radius", ValueType::scalar);
+		setParam("Radius", 0.5f);
+	}
+};
+
+class BoxShapeNode : public GraphicsNode {
+public:
+	std::string library() {
+		return R"(
+void gen_shape_box(in vec2 uv, vec2 b, in vec4 r, out float res) {
+	vec2 p = clamp(uv, 0.0, 1.0) * 2.0 - 1.0;
+
+	r.xy = (p.x > 0.0) ? r.xy : r.zw;
+    r.x  = (p.y > 0.0) ? r.x  : r.y;
+    vec2 q = abs(p) - b + r.x;
+    res = 1.0 - (min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r.x);
+})";
+	}
+
+	std::string functionName() { return "gen_shape_box"; }
+
+	GraphicsNodeParams parameters() {
+		return {
+			{ "uv", { "UV", SpecialType::textureCoords } },
+			{ "b", { "Bounds", SpecialType::none } },
+			{ "r", { "Border Radius", SpecialType::none } },
+		};
+	}
+
+	void onCreate() {
+		addOutput("Output", ValueType::scalar);
+		addInput("UV", ValueType::vec2);
+
+		addParam("Bounds", ValueType::vec2);
+		addParam("Border Radius", ValueType::vec4);
+
+		setParam("Bounds", { 0.5f, 0.5f });
+		setParam("Border Radius", { 0.0f, 0.0f, 0.0f, 0.0f });
+	}
+};
