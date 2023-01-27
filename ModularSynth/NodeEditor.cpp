@@ -92,34 +92,59 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 	if (m_state == NodeEditorState::draggingConnection) {
 		VisualNode* node = get(m_selectedNode);
 		if (node) {
-			Rect outRect = node->getOutputRect(m_selectedOutput);
+
+			if(m_selectedOutput == SIZE_MAX && m_selectedInput == SIZE_MAX)
+				return;
+
+			Rect socketRect = {};
+			if(m_selectedOutput >= 0)
+				socketRect = node->getOutputRect(m_selectedOutput);
+			else if(m_selectedInput >= 0) 
+				socketRect = node->getInputRect(m_selectedInput);
+
+			Point source = { socketRect.x + 5, socketRect.y + 5 };
+			Point destination = { m_mousePos.x, m_mousePos.y };
+
+			if(m_selectedInput > m_selectedOutput)
+				std::swap(source, destination);
 
 			nvgSave(ctx);
-			beginConnection(ctx, { outRect.x + 5, outRect.y + 5 }, m_mousePos);
+			beginConnection(ctx, source, destination);
 			nvgStrokeWidth(ctx, 3.0f);
 			nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.5f));
 			nvgStroke(ctx);
 
 			nvgBeginPath(ctx);
-			nvgCircle(ctx, outRect.x + 5, outRect.y + 5, 4.5f);
-			nvgCircle(ctx, m_mousePos.x, m_mousePos.y, 4.5f);
+			nvgCircle(ctx, source.x, source.y, 4.5f);
+			nvgCircle(ctx, destination.x, destination.y, 4.5f);
 			nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.5f));
 			nvgFill(ctx);
 
 			{
-				VisualNode* inputNode;
-				int inputIndex = -1;
-				int distSquared = getClosestInput(m_mousePos, inputNode, inputIndex);
-				
-				if((inputNode != nullptr) && (inputIndex >= 0) && (inputNode != node)) 
+				VisualNode* targetNode = nullptr;
+
+				int socketIndex = -1;
+				int distSquared = INT_MAX;
+
+				if(m_selectedOutput != -1) 
+					distSquared = getClosestInput(m_mousePos, targetNode, socketIndex);
+				else if(m_selectedInput != -1)
+					distSquared = getClosestOutput(m_mousePos, targetNode, socketIndex);
+
+				if((targetNode != nullptr) && (socketIndex >= 0) && (targetNode != node)) 
 				{
 
 					if(distSquared < (18 * 18)) 
 					{
-						Rect inRect = inputNode->getInputRect(inputIndex);
+						Rect socketRect = {};
+
+						if(m_selectedOutput != -1)
+							socketRect = targetNode->getInputRect(socketIndex);
+						else if(m_selectedInput != -1)
+							socketRect = targetNode->getOutputRect(socketIndex);
 
 						nvgBeginPath(ctx);
-						nvgCircle(ctx, inRect.x + 5, inRect.y + 5, 18.0f * m_proximityAnimation);
+						nvgCircle(ctx, socketRect.x + 5, socketRect.y + 5, 18.0f * m_proximityAnimation);
 						nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 0.5f, 0.5f));
 						nvgFill(ctx);
 
@@ -191,7 +216,7 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 				clickedOnSomet = true;
 				clickedNode = node->id();
 				m_selectedOutput = -1;
-
+				m_selectedInput = -1;
 				rebuildDrawOrder();
 
 				// check for out click
@@ -204,6 +229,7 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 					}
 				}
 
+				//Clicked input node instead, decide do we reroute a connection, or do we start a new connection.
 				for (size_t i = 0; i < node->inputCount(); i++) {
 					Rect inRect = node->getInputRect(i);
 					inRect.inflate(2);
@@ -221,17 +247,17 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 							if (connection.source && connection.destination) 
 							{
 								removeConnection(connection.source, connection.sourceOutput, connection.destination, connection.destinationInput);
-								m_selectedNode = connection.source->id();
 								m_selectedOutput = connection.sourceOutput;
-								m_state = NodeEditorState::draggingConnection;
-								clickedNode = m_selectedNode;
+								clickedNode = connection.source->id();
 								break;
 							}
 						}
-						else {
-							/* TODO dragging connection from output */
+						else 
+						{
+							m_selectedInput = i;
+							m_state = NodeEditorState::draggingConnection;
+							break;
 						}
-							
 						break;
 					}
 				}
@@ -244,7 +270,14 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 			m_selectedNode = 0;
 		}
 		else {
-			m_state = m_selectedOutput != -1 ? NodeEditorState::draggingConnection : NodeEditorState::draggingNode;
+			if(m_selectedOutput != -1 || m_selectedInput != -1) 
+			{
+				m_state = NodeEditorState::draggingConnection;
+			}
+			else 
+			{
+				m_state = NodeEditorState::draggingNode;
+			}
 
 			if(m_state == NodeEditorState::draggingConnection)
 					m_proximityAnimation = 1.0f;
@@ -261,9 +294,9 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 	if (m_state == NodeEditorState::draggingConnection) {
 		//for (auto&& node : m_nodes) {
 		//	for (size_t i = 0; i < node->inputCount(); i++) {
-		//		Rect inRect = node->getInputRect(i);
-		//		inRect.inflate(2);
-		//		if (inRect.hasPoint({ x, y })) {
+		//		Rect socketRect = node->getInputRect(i);
+		//		socketRect.inflate(2);
+		//		if (socketRect.hasPoint({ x, y })) {
 		//			VisualNode* source = get(m_selectedNode);
 		//			if (source != node.get()) { // Don't allow self-connection
 		//				connect(source, m_selectedOutput, node.get(), i);
@@ -272,7 +305,7 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 		//		}
 		//	}
 		//}
-		{
+		if(m_selectedOutput >= 0)  {
 			VisualNode* source = get(m_selectedNode);
 			VisualNode* target = nullptr;
 			int input = -1;
@@ -281,6 +314,16 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 			if(target && input >= 0 && dist < (18 * 18)) {
 				if(!target->node()->input(input).connected) 
 					connect(source, m_selectedOutput, target, input);
+			}
+		}
+		else if(m_selectedInput >= 0) {
+			VisualNode* source = get(m_selectedNode);
+			VisualNode* target = nullptr;
+			int output = -1;
+			int dist = getClosestOutput({ x, y }, target, output);
+
+			if(target && output >= 0 && dist < (18 * 18)) {
+				connect(target, output, source, m_selectedInput);
 			}
 		}
 	}
@@ -377,7 +420,7 @@ void NodeEditor::onKeyRelease(int key) {
 
 int NodeEditor::getClosestInput(Point p, VisualNode*& node, int& inputRectIndex)
 {
-	int maxDistance = 0x7FFF'FFFF;
+	int maxDistance = INT_MAX;
 	node = nullptr;
 	inputRectIndex = -1;
 	for(auto& n: m_nodes) 
@@ -395,28 +438,30 @@ int NodeEditor::getClosestInput(Point p, VisualNode*& node, int& inputRectIndex)
 	}
 
 	return maxDistance;
+
 }
 
-int NodeEditor::getClosestOutput(Point p, VisualNode*& node, int& inputRectIndex)
+int NodeEditor::getClosestOutput(Point p, VisualNode*& node, int& outputRectIndex)
 {
-	int maxDistance = 0x7FFF'FFFF;
+	int maxDistance = INT_MAX;
 	node = nullptr;
-	inputRectIndex = -1;
+	outputRectIndex = -1;
 	for(auto& n: m_nodes) 
 	{
 		for(int i = 0; i < n->outputCount(); i++)
 		{
-			Rect rect = node->getOutputRect(i);
+			Rect rect = n->getOutputRect(i);
 			if(int dist = rect.distanceToPointSquared(p); dist < maxDistance) 
 			{
 				node = n.get();
-				inputRectIndex = i;
-				dist = maxDistance;
+				outputRectIndex = i;
+				maxDistance = dist;
 			}
 		}
 	}
 
 	return maxDistance;
+
 }
 
 Rect VisualNode::getOutputRect(size_t index) {
