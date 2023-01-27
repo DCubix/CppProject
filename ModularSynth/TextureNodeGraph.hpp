@@ -13,7 +13,7 @@
 
 class TextureNodeGraph : public NodeGraph {
 private:
-	size_t m_imgId{ 1 }; // 0 is the final output
+	size_t m_imgId{ 0 }; // 0 is the final output
 	std::map<size_t, std::string> m_subtreeNames;
 	std::map<size_t, std::string> m_subtreeFunctions;
 
@@ -23,14 +23,17 @@ public:
 		if (m_nodePath.empty()) buildNodePath();
 
 		gen.beginFunctionBlock("vec4 tree_" + funcName + "(vec2 cUV)");
-
+		
 		std::string lib = "";
 
 		for (size_t i = 0; i < m_nodePath.size(); i++) {
 			auto node = dynamic_cast<GraphicsNode*>(get(m_nodePath[i]));
 
-			// replace $TREE
+			// replace $ vars
 			std::string nodeLib = node->library();
+			nodeLib = std::regex_replace(nodeLib, std::regex("\\$NODE"), std::to_string(node->id()));
+
+			// multipass nodes need a subtree function to sample from it multiple times
 			if (node->multiPassNode()) {
 				std::string treeName = std::format("tree_sub_{}", node->id());
 				nodeLib = std::regex_replace(nodeLib, std::regex("\\$TREE"), treeName);
@@ -43,6 +46,14 @@ public:
 
 					m_subtreeFunctions[node->id()] = subtreeGen.target(ShaderGen::Target::definitions);
 				}
+			}
+
+			// Output nodes
+			if (dynamic_cast<OutputNode*>(node)) {
+				gen.beginCodeBlock();
+				gen.append(std::format("layout (rgba32f, binding={}) uniform image2D bOutput{};", m_imgId, node->id()));
+				gen.endCodeBlock(ShaderGen::Target::uniforms);
+				m_imgId++;
 			}
 
 			// load libraries
@@ -58,7 +69,7 @@ public:
 
 			// declare outputs
 			for (size_t i = 0; i < node->outputCount(); i++) {
-				auto& nv = node->output(i);
+				auto& nv = node->texture(i);
 
 				auto varName = std::format("out_{}_{}", node->id(), i);
 
@@ -89,6 +100,8 @@ public:
 				lastNode = node;
 			}
 
+			auto nodeFunction = std::regex_replace(node->functionName(), std::regex("\\$NODE"), std::to_string(node->id()));
+
 			// a
 			if (appendFunctions) {
 				if (node->multiPassNode() && m_subtreeFunctions.find(node->id()) != m_subtreeFunctions.end()) {
@@ -96,16 +109,17 @@ public:
 					gen.append(m_subtreeFunctions[node->id()]);
 					gen.endCodeBlock(ShaderGen::Target::definitions);
 				}
-				gen.pasteFunction(node->functionName(), lib);
+				gen.pasteFunction(nodeFunction, lib);
 			}
 
 			gen.indent();
-			gen.append(std::format("{}(", node->functionName()));
+			gen.append(std::format("{}(", nodeFunction));
 
 			// b
 			auto nodeParams = node->parameters();
-			auto fn = gen.getFunction(node->functionName());
+			auto fn = gen.getFunction(nodeFunction);
 
+			size_t i = 0;
 			for (auto&& param : fn.parameterOrder) {
 				auto paramOb = fn.parameters[param];
 				if (paramOb.qualifier == ShaderFunctionParam::out) continue;
@@ -121,7 +135,7 @@ public:
 						// TODO: Consider multiple connections to the same output-input pair, maybe an average?
 						//       might give some problems when dealing with different types...
 						auto&& con = conns.front();
-						auto&& nv = con.source->output(con.sourceOutput);
+						auto&& nv = con.source->texture(con.sourceOutput);
 						gen.convertType(
 							nv.type,
 							paramOb.type,
@@ -139,18 +153,22 @@ public:
 					appendComma = checkParams(gen, node, inputParamName, sType, paramOb.type);
 				}
 
-				if (appendComma) {
+				if (appendComma && i < fn.parameterOrder.size() - 1) {
 					gen.append(", ");
 				}
+
+				i++;
 			}
 
 			// c
-			for (size_t i = 0; i < node->outputCount(); i++) {
-				auto& nv = node->output(i);
-				auto varName = std::format("out_{}_{}", node->id(), i);
-				gen.append(varName);
-				if (i < node->outputCount() - 1) {
-					gen.append(", ");
+			if (node->outputCount() > 0) {
+				for (size_t i = 0; i < node->outputCount(); i++) {
+					auto& nv = node->texture(i);
+					auto varName = std::format("out_{}_{}", node->id(), i);
+					gen.append(varName);
+					if (i < node->outputCount() - 1) {
+						gen.append(", ");
+					}
 				}
 			}
 
@@ -158,12 +176,17 @@ public:
 		}
 
 		// output the last node output by default
-		if (lastNode) {
+		if (lastNode && !dynamic_cast<OutputNode*>(lastNode)) {
 			gen.indent();
+
 			auto varName = std::format("out_{}_{}", lastNode->id(), 0);
 			gen.append("return ");
-			gen.convertType(lastNode->output(0).type, ValueType::vec4, varName);
+			gen.convertType(lastNode->outputCount() > 0 ? lastNode->texture(0).type : ValueType::vec4, ValueType::vec4, varName);
 			gen.append(";\n");
+		}
+		else {
+			gen.indent();
+			gen.append("return vec4(0.0);\n");
 		}
 
 		gen.endFunctionBlock(ShaderGen::Target::definitions);
@@ -172,7 +195,7 @@ public:
 	void solve() override {
 		ShaderGen gen{};
 
-		m_imgId = 1;
+		m_imgId = 0;
 		m_subtreeNames.clear();
 		m_subtreeFunctions.clear();
 
@@ -197,13 +220,12 @@ public:
 		*/
 
 		// output the shader itself
-		auto fnNameCall = std::format("tree_{}(cUV)", "main");
+
+		auto fnNameCall = std::format("tree_{}(cUV);", "main");
 
 		gen.beginCodeBlock();
 		gen.indent();
-		gen.append("imageStore(bOutput, cCoords, ");
-		gen.convertType(ValueType::vec4, ValueType::vec4, fnNameCall);
-		gen.append(");\n");
+		gen.append(fnNameCall);
 		gen.endCodeBlock(ShaderGen::Target::body);
 
 		std::ofstream of("gen.glsl");
@@ -252,7 +274,7 @@ public:
 					auto conns = getConnectionsToInput(node, node->inputIndex(uvsName));
 					if (!conns.empty()) { // connected
 						auto&& con = conns.front();
-						auto&& nv = con.source->output(con.sourceOutput);
+						auto&& nv = con.source->texture(con.sourceOutput);
 						varName = std::format("out_{}_{}", con.source->id(), con.sourceOutput);
 						uvsType = nv.type;
 					}
@@ -298,7 +320,7 @@ public:
 					auto conns = getConnectionsToInput(node, node->inputIndex(uvsName));
 					if (!conns.empty()) { // connected
 						auto&& con = conns.front();
-						auto&& nv = con.source->output(con.sourceOutput);
+						auto&& nv = con.source->texture(con.sourceOutput);
 						gen.convertType(
 							nv.type,
 							ValueType::vec2,
@@ -317,23 +339,29 @@ public:
 		}
 	}
 
-	std::unique_ptr<Shader> generatedShader;
-	std::unique_ptr<Texture> output;
-
-	void render(uint32_t width = 1024, uint32_t height = 1024) {
+	void render() {
 		if (!generatedShader) return;
 
-		if (!output) {
-			output = std::unique_ptr<Texture>(new Texture({ width, height, 0 }, GL_RGBA32F));
+		// render outputs
+		size_t binding = 0;
+		for (const auto& nodeId : m_nodePath) {
+			auto node = get(nodeId);
+			OutputNode* out = dynamic_cast<OutputNode*>(node);
+			if (!out) continue;
+
+			out->beginRender(binding++);
 		}
 
-		glBindImageTexture(0, output->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);
 		glUseProgram(generatedShader->id());
-
 		setUniforms();
 
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-		glDispatchCompute(output->size()[0] / 16, output->size()[1] / 16, 1);
+		for (const auto& nodeId : m_nodePath) {
+			auto node = get(nodeId);
+			OutputNode* out = dynamic_cast<OutputNode*>(node);
+			if (!out) continue;
+
+			out->endRender();
+		}
 
 		glUseProgram(0);
 	}
@@ -357,6 +385,8 @@ public:
 			i++;
 		}
 	}
+
+	std::unique_ptr<Shader> generatedShader;
 
 private:
 	void setUniform(const std::string& name, const NodeValue& nv, size_t index) {

@@ -447,10 +447,10 @@ int fons__tt_buildGlyphBitmap(FONSttFontImpl *font, int glyph, float size, float
 	return 1;
 }
 
-void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *output, int outWidth, int outHeight, int outStride,
+void fons__tt_renderGlyphBitmap(FONSttFontImpl *font, unsigned char *texture, int outWidth, int outHeight, int outStride,
 								float scaleX, float scaleY, int glyph)
 {
-	stbtt_MakeGlyphBitmap(&font->font, output, outWidth, outHeight, outStride, scaleX, scaleY, glyph);
+	stbtt_MakeGlyphBitmap(&font->font, texture, outWidth, outHeight, outStride, scaleX, scaleY, glyph);
 }
 
 int fons__tt_getGlyphKernAdvance(FONSttFontImpl *font, int glyph1, int glyph2)

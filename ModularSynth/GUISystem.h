@@ -24,6 +24,9 @@ public:
 
 private:
 	std::map<ControlID, std::shared_ptr<Control>> m_controls;
+	std::vector<std::pair<ControlID, size_t>> m_controlOrders;
+
+	ControlID m_currentFocus{ 0 };
 
 	std::vector<Control*> m_controlsAdd;
 	std::vector<ControlID> m_controlsRemove;

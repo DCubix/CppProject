@@ -169,6 +169,7 @@
     <ClCompile Include="Button.cpp" />
     <ClCompile Include="CheckBox.cpp" />
     <ClCompile Include="Control.cpp" />
+    <ClCompile Include="Edit.cpp" />
     <ClCompile Include="EventSystem.cpp" />
     <ClCompile Include="glad\glad.c" />
     <ClCompile Include="glad\glad_wgl.c" />
@@ -186,10 +187,12 @@
     <ClCompile Include="ShaderGen.cpp" />
     <ClCompile Include="Slider.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClInclude Include="Edit.h" />
     <ClInclude Include="olcUTIL_DataFile.h" />
     <ClInclude Include="renderdoc_app.h" />
     <ClInclude Include="TextureNodeGraph.hpp" />
     <ClCompile Include="TextureNodeRegistry.cpp" />
+    <ClCompile Include="TextureView.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -226,6 +229,7 @@
     <ClInclude Include="Texture.h" />
     <ClInclude Include="TextureNodes.hpp" />
     <ClInclude Include="TextureNodeRegistry.h" />
+    <ClInclude Include="TextureView.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

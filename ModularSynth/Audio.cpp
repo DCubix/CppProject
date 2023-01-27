@@ -2,10 +2,10 @@
 
 #include <cstdio>
 
-static void dataCallback(ma_device* dev, void* output, const void* input, ma_uint32 frames) {
+static void dataCallback(ma_device* dev, void* texture, const void* input, ma_uint32 frames) {
 	ma_waveform* sineWave;
 	sineWave = (ma_waveform*)dev->pUserData;
-	ma_waveform_read_pcm_frames(sineWave, output, frames, nullptr);
+	ma_waveform_read_pcm_frames(sineWave, texture, frames, nullptr);
 }
 
 void demo() {

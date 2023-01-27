@@ -4,6 +4,7 @@
 #include <memory>
 #include <string>
 #include <map>
+#include <functional>
 
 class Layout {
 public:
@@ -19,6 +20,7 @@ public:
 	void onMouseDown(int button, int x, int y) override;
 	void onMouseUp(int button, int x, int y) override;
 	void onMouseMove(int x, int y, int dx, int dy) override;
+	void onMouseLeave() override;
 
 	void setLayout(Layout* layout);
 	void addChild(Control* control);
@@ -33,6 +35,8 @@ public:
 	void draggable(bool draggable) { m_draggable = draggable; }
 
 	std::string title{ "Panel" };
+
+	std::function<void(NVGcontext*)> onCustomPaint;
 
 private:
 	std::vector<Control*> m_children;

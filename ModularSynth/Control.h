@@ -62,6 +62,8 @@ public:
 	virtual void onMouseMove(int x, int y, int dx, int dy) {}
 	virtual void onMouseEnter() {}
 	virtual void onMouseLeave() {}
+	virtual void onFocus() {}
+	virtual void onBlur() {}
 	virtual void onKeyPress(int keyCode) {}
 	virtual void onKeyRelease(int keyCode) {}
 	virtual void onType(TCHAR charCode) {}
@@ -76,15 +78,23 @@ public:
 	Rect screenSpaceBounds();
 	Rect localBounds();
 
+	bool focused() const { return m_focused; }
+	void requestFocus() { m_focusRequested = true; }
+
+	void setOrder(size_t order) { m_order = order; }
+
 	ControlID id() const { return m_id; }
 
 	Rect bounds{};
+
 
 protected:
 	Control* m_parent{ nullptr };
 	ControlID m_id{ 0 };
 
-	bool m_mouseInside{ false };
+	size_t m_order{ 0 };
+
+	bool m_mouseInside{ false }, m_focusRequested{ false }, m_focused{ false };
 
 	Point screenToLocalPoint(Point src);
 	void checkMouseInside();

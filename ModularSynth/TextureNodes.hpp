@@ -288,13 +288,43 @@ public:
 	outV = mix(m, 2.0 - m, step(1.0, m));
 }
 
-void out_uv(vec2 uv, float repeat, float strength, in vec2 deform, out vec2 duv) {
-	duv = uv + ((deform * 2.0 - 1.0) * strength);
-	if (repeat == 0.0) { // clamp to edge
+vec2 op_rep(in vec2 p, float c, vec2 lmax) {
+    return p - c * clamp(round(p / c), vec2(0.0), lmax);
+}
+
+void out_uv(
+	vec2 uvIn, float clampMode, float deformAmt, vec2 deform,
+
+	vec2 repeat, float spacing,
+
+	vec2 pos, vec2 scale, float rot,
+
+	out vec2 duv
+) {
+	vec2 sz = imageSize(bOutput);
+	float s = sin(rot);
+	float c = cos(rot);
+
+	vec2 uv = uvIn;
+	uv.x -= 0.5;
+	uv.x *= sz.x / sz.y;
+
+	mat2 xform =
+		mat2(scale.x, 0.0, 0.0, scale.y) *
+		mat2(c, -s, s, c);	
+	uv *= xform;
+	uv += pos;
+
+	uv = op_rep(uv, spacing, repeat);
+
+	uv += ((deform * 2.0 - 1.0) * deformAmt);
+
+	duv = uv;
+	if (clampMode == 0.0) { // clamp to edge
 		duv = clamp(duv, 0.0, 1.0);
-	} else if (repeat == 1.0) { // repeat
+	} else if (clampMode == 1.0) { // repeat
 		duv = mod(duv, 1.0);
-	} else if (repeat == 2.0) { // mirror
+	} else if (clampMode == 2.0) { // mirror
 		mirrored(duv, duv);
 	}
 }
@@ -305,18 +335,33 @@ void out_uv(vec2 uv, float repeat, float strength, in vec2 deform, out vec2 duv)
 
 	GraphicsNodeParams parameters() {
 		return {
-			{ "uv", { "cUV", SpecialType::none } },
+			{ "uvIn", { "cUV", SpecialType::none } },
+			{ "clampMode", { "Clamp", SpecialType::none } },
+			{ "deformAmt", { "Deform Amount", SpecialType::none } },
+			{ "deform", { "Deform", SpecialType::none } },
 			{ "repeat", { "Repeat", SpecialType::none } },
-			{ "strength", { "Strength", SpecialType::none } },
-			{ "deform", { "Deform", SpecialType::none } }
+			{ "spacing", { "Spacing", SpecialType::none } },
+			{ "pos", { "Position", SpecialType::none } },
+			{ "scale", { "Scale", SpecialType::none } },
+			{ "rot", { "Rotation", SpecialType::none } }
 		};
 	}
 
 	void onCreate() {
 		addInput("Deform", ValueType::vec2);
-		addParam("Repeat", ValueType::scalar);
-		addParam("Strength", ValueType::scalar);
-		setParam("Strength", 1.0f);
+
+		addParam("Repeat", ValueType::vec2);
+		addParam("Spacing", ValueType::scalar);
+
+		addParam("Position", ValueType::vec2);
+		addParam("Scale", ValueType::vec2);
+		addParam("Rotation", ValueType::scalar);
+
+		addParam("Clamp", ValueType::scalar);
+
+		addParam("Deform Amount", ValueType::scalar);
+		setParam("Deform Amount", 1.0f);
+
 		addOutput("Output", ValueType::vec2);
 	}
 
@@ -380,6 +425,55 @@ public:
 		addParam("Scale", ValueType::scalar);
 		setParam("Scale", 0.1f);
 	}
+};
+
+class OutputNode : public GraphicsNode {
+public:
+	std::string library() {
+		return R"(
+void emit_out_$NODE(in vec2 uv, in vec4 color) {
+	imageStore(bOutput$NODE, ivec2(uv * vec2(imageSize(bOutput$NODE))), color);
+})";
+	}
+
+	std::string functionName() { return "emit_out_$NODE"; }
+
+	GraphicsNodeParams parameters() {
+		return {
+			{ "uv", { "cUV", SpecialType::none } },
+			{ "color", { "Color", SpecialType::none } }
+		};
+	}
+
+	void onCreate() {
+		addInput("Color", ValueType::vec4);
+		addParam("Size", ValueType::vec2);
+		setParam("Size", 512.0f, 512.0f);
+	}
+
+	void beginRender(size_t binding = 0) {
+		uint32_t width = uint32_t(paramValue("Size")[0]);
+		uint32_t height = uint32_t(paramValue("Size")[1]);
+
+		if (!texture) {
+			texture = std::unique_ptr<Texture>(new Texture({ width, height }, GL_RGBA32F));
+		}
+		else {
+			if (texture->size()[0] != width || texture->size()[1] != height) {
+				texture.reset(nullptr);
+				texture = std::unique_ptr<Texture>(new Texture({ width, height }, GL_RGBA32F));
+			}
+		}
+
+		glBindImageTexture(binding, texture->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);	
+	}
+
+	void endRender() {
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glDispatchCompute(texture->size()[0] / 16, texture->size()[1] / 16, 1);
+	}
+
+	std::unique_ptr<Texture> texture;
 };
 
 class CircleShapeNode : public GraphicsNode {

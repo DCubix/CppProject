@@ -1,5 +1,8 @@
 #pragma once
 
+#define NOMINMAX
+#include <algorithm>
+
 #include "TextureNodes.hpp"
 #include "NodeEditor.h"
 
@@ -9,6 +12,7 @@
 #include "Label.h"
 #include "RadioSelector.h"
 #include "Button.h"
+#include "Edit.h"
 
 #include "portable-file-dialogs.h"
 
@@ -20,6 +24,7 @@ static constexpr Color generatorNodeColor = hex2rgbf(0x47b394);
 static constexpr Color operatorNodeColor = hex2rgbf(0xb86335);
 static constexpr Color externalNodeColor = hex2rgbf(0x7a30ba);
 static constexpr Color multisampleNodeColor = hex2rgbf(0x59cf36);
+static constexpr Color resultNodeColor = hex2rgbf(0x256bdb);
 
 /* UI Editing */
 using GuiBuilder = std::function<Control* (GUISystem*, VisualNode*)>;
@@ -78,6 +83,50 @@ static Control* gui_ValueSlider(
 
 	gui->addControl(row);
 	return row;
+}
+
+template <size_t Size>
+static Control* gui_Vector(
+	GUISystem* gui,
+	const std::string& label,
+	RawValue& value
+) {
+	const std::string labels[] = { "X:", "Y:", "Z:", "W:" };
+
+	Panel* root = new Panel();
+	root->drawBackground(false);
+	root->setLayout(new ColumnLayout(0));
+	root->bounds = { 0, 0, 0, 64 };
+	gui->addControl(root);
+
+	Label* lbl = new Label();
+	lbl->text = label;
+	lbl->bounds = { 0, 0, 0, 24 };
+	gui->addControl(lbl);
+
+	Panel* vec = new Panel();
+	vec->drawBackground(false);
+	vec->setLayout(new RowLayout(Size, 0));
+	vec->bounds = { 0, 0, 0, 34 };
+	gui->addControl(vec);
+
+	for (size_t i = 0; i < std::min(4ull, Size); i++) {
+		Edit* edt = new Edit();
+		edt->inputFilter = std::regex("[0-9\\.\\-]");
+		edt->text = std::to_string(value[i]);
+		edt->label = labels[i];
+		edt->onChange = [&value, edt, i](const std::string& text) {
+			value[i] = std::stof(text);
+			edt->text = std::to_string(value[i]);
+		};
+		gui->addControl(edt);
+		vec->addChild(edt);
+	}
+
+	root->addChild(lbl);
+	root->addChild(vec);
+
+	return root;
 }
 
 static Control* gui_ColorNode(GUISystem* gui, VisualNode* node) {
@@ -285,21 +334,47 @@ static Control* gui_UVNode(GUISystem* gui, VisualNode* node) {
 	rsel->addOption(0, "Clamp");
 	rsel->addOption(1, "Repeat");
 	rsel->addOption(2, "Mirror");
-	rsel->select(int(nd->param("Repeat").value[0]));
+	rsel->select(int(nd->param("Clamp").value[0]));
 	rsel->onSelect = [=](int index) {
-		nd->setParam("Repeat", float(index));
+		nd->setParam("Clamp", float(index));
 	};
+	pnl->addChild(rsel);
 	gui->addControl(rsel);
 
-	auto ctrl = gui_ValueSlider(
-		gui, "Strength", nd->param("Strength").value[0],
+	auto defAmt = gui_ValueSlider(
+		gui, "Def. Amt.", nd->param("Deform Amount").value[0],
 		[=](float v) {
-			nd->setParam("Strength", v);
+			nd->setParam("Deform Amount", v);
 		}
 	);
+	pnl->addChild(defAmt);
 
-	pnl->addChild(rsel);
-	pnl->addChild(ctrl);
+	auto rep = gui_Vector<2ull>(gui, "Repeat", nd->paramValue("Repeat"));
+	pnl->addChild(rep);
+
+	auto spacing = gui_ValueSlider(
+		gui, "Spacing", nd->param("Spacing").value[0],
+		[=](float v) {
+			nd->setParam("Spacing", v);
+		},
+		0.0f, 1.0f, 0.01f
+	);
+	pnl->addChild(spacing);
+
+	auto pos = gui_Vector<2ull>(gui, "Position", nd->paramValue("Position"));
+	pnl->addChild(pos);
+
+	auto scl = gui_Vector<2ull>(gui, "Scale", nd->paramValue("Scale"));
+	pnl->addChild(scl);
+
+	auto rot = gui_ValueSlider(
+		gui, "Rotation", nd->param("Rotation").value[0],
+		[=](float v) {
+			nd->setParam("Rotation", v);
+		},
+		0.0f, PI * 2.0f, 0.01f
+	);
+	pnl->addChild(rot);
 
 	return pnl;
 }
@@ -397,6 +472,7 @@ static NodeContructor nodeTypes[] = {
 	{ "UVS", "UV", NodeCtor(UVNode, generatorNodeColor), gui_UVNode },
 	{ "RGR", "Radial Gradient", NodeCtor(RadialGradientNode, generatorNodeColor), nullptr },
 	{ "NRM", "Normal Map", NodeCtor(NormalMapNode, multisampleNodeColor), gui_NormalMapNode },
+	{ "OUT", "Output", NodeCtor(OutputNode, resultNodeColor), nullptr },
 
 	{ "SCIRCLE", "Circle", NodeCtor(CircleShapeNode, generatorNodeColor), gui_CircleShapeNode },
 	{ "SBOX", "Box", NodeCtor(BoxShapeNode, generatorNodeColor), gui_BoxShapeNode },

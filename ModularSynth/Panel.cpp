@@ -4,6 +4,7 @@ constexpr float titleHeight = 40.0f;
 
 void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 	Rect b = bounds;
+	Rect dbounds = { 8, 8, b.width - 16, b.height - 16 };
 
 	if (m_drawBackground) {
 		nvgBeginPath(ctx);
@@ -22,11 +23,19 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgText(ctx, 16.0f, titleHeight / 2 + 1.5f, title.c_str(), nullptr);
 	}
 
+	//nvgScissor(ctx, dbounds.x, dbounds.y, dbounds.width, dbounds.height);
+
+	if (onCustomPaint) {
+		nvgSave(ctx);
+		onCustomPaint(ctx);
+		nvgRestore(ctx);
+	}
+
 	int index = 0;
 
 	if (m_layout) m_layout->beginLayout();
 	for (auto&& child : m_children) {
-		if (m_layout) m_layout->performLayout(child, { b.width, b.height }, index);
+		if (m_layout) m_layout->performLayout(child, { b.width, b.height - int(m_drawBackground ? titleHeight : 0) }, index);
 		
 		if (m_drawBackground && m_layout) {
 			child->bounds.y += titleHeight;
@@ -86,6 +95,10 @@ void Panel::onMouseMove(int x, int y, int dx, int dy) {
 		bounds.x += dx;
 		bounds.y += dy;
 	}
+}
+
+void Panel::onMouseLeave() {
+	m_dragging = false;
 }
 
 void ColumnLayout::beginLayout() {

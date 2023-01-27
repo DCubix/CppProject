@@ -31,7 +31,7 @@ public:
 	size_t addInput(const std::string& name, ValueType type);
 	size_t addOutput(const std::string& name, ValueType type);
 
-	NodeValue& output(size_t index);
+	NodeValue& texture(size_t index);
 	NodeValue& input(size_t index);
 	NodeValue* input(const std::string& in);
 

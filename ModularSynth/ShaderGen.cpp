@@ -195,14 +195,14 @@ void ShaderGen::convertType(ValueType from, ValueType to, const std::string& var
 	else if (to == ValueType::vec3) {
 		switch (from) {
 			case ValueType::scalar: targetStr += std::format("vec3({})", varName); break;
-			case ValueType::vec2: targetStr += std::format("vec3({}.r)", varName); break;
+			case ValueType::vec2: targetStr += std::format("vec3({}, 0.0)", varName); break;
 			case ValueType::vec4: targetStr += std::format("{}.rgb", varName, varName); break;
 		}
 	}
 	else { // vec4
 		switch (from) {
 			case ValueType::scalar: targetStr += std::format("vec4(vec3({}), 1.0)", varName); break;
-			case ValueType::vec2: targetStr += std::format("vec4(vec3({}.r), {}.g)", varName, varName); break;
+			case ValueType::vec2: targetStr += std::format("vec4({}, 0.0, 1.0)", varName); break;
 			case ValueType::vec3: targetStr += std::format("vec4({}, 1.0)", varName); break;
 		}
 	}

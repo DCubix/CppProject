@@ -18,7 +18,7 @@ size_t Node::addOutput(const std::string& name, ValueType type) {
 	return m_outputs.size() - 1;
 }
 
-NodeValue& Node::output(size_t index) {
+NodeValue& Node::texture(size_t index) {
 	return m_outputs[index];
 }
 
@@ -85,7 +85,7 @@ void NodeGraph::solve() {
 		for (auto conn : getNodeOutputConnections(node)) {
 			Node* from = conn.source;
 			Node* to = conn.destination;
-			to->input(conn.destinationInput).value = from->output(conn.sourceOutput).value;
+			to->input(conn.destinationInput).value = from->texture(conn.sourceOutput).value;
 		}
 	}
 }

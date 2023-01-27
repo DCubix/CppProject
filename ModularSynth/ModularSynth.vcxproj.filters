@@ -130,6 +130,12 @@
     <ClCompile Include="ShaderGen.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Edit.cpp">
+      <Filter>Source Files\gui\controls</Filter>
+    </ClCompile>
+    <ClCompile Include="TextureView.cpp">
+      <Filter>Source Files\gui\controls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">
@@ -239,6 +245,12 @@
     </ClInclude>
     <ClInclude Include="olcUTIL_DataFile.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Edit.h">
+      <Filter>Header Files\gui\controls</Filter>
+    </ClInclude>
+    <ClInclude Include="TextureView.h">
+      <Filter>Header Files\gui\controls</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

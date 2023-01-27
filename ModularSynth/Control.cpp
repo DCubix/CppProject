@@ -51,6 +51,7 @@ void Control::onEventReceived(const MouseButtonEvent& e) {
 	if (m_parent && !m_parent->screenSpaceBounds().hasPoint(e.screenPosition)) return;
 
 	if (e.state == ButtonState::pressed) {
+		requestFocus();
 		onMouseDown(e.button, mpos.x, mpos.y);
 	}
 	else {

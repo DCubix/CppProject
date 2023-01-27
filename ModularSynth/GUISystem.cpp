@@ -56,7 +56,38 @@ void GUISystem::removeControl(ControlID control) {
 void GUISystem::renderAll(NVGcontext* ctx, float deltaTime) {
 	end();
 	begin();
-	for (auto&& [ cid, ctrl ] : m_controls) {
+
+	m_controlOrders.clear();
+	for (auto&& [cid, ctrl] : m_controls) {
+		m_controlOrders.push_back({ cid, ctrl->m_order });
+	}
+
+	std::sort(
+		m_controlOrders.begin(),
+		m_controlOrders.end(),
+		[](const std::pair<ControlID, size_t>& a, const std::pair<ControlID, size_t>& b) {
+			return a.second < b.second;
+		}
+	);
+
+	for (auto [ cid, order ] : m_controlOrders) {
+		auto&& ctrl = m_controls[cid];
+
+		// focus handling
+		if (ctrl->m_focusRequested) {
+			if (m_controls.find(m_currentFocus) != m_controls.end()) {
+				auto previous = m_controls[m_currentFocus].get();
+				previous->m_focused = false;
+				previous->onBlur();
+			}
+
+			ctrl->m_focusRequested = false;
+			ctrl->m_focused = true;
+			ctrl->onFocus();
+			m_currentFocus = ctrl->id();
+		}
+		//
+
 		if (ctrl->parent()) continue; // Parent handles drawing of children.
 
 		nvgSave(ctx);
@@ -69,7 +100,9 @@ void GUISystem::renderAll(NVGcontext* ctx, float deltaTime) {
 		nvgRestore(ctx);
 	}
 
-	for (auto&& [cid, ctrl] : m_controls) {
+	for (auto&& [cid, order] : m_controlOrders) {
+		auto&& ctrl = m_controls[cid];
+
 		nvgSave(ctx);
 
 		// make local coordinates

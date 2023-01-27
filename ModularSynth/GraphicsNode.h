@@ -30,11 +30,12 @@ public:
 	virtual void onCreate() = 0;
 
 	void setup() override final;
-	NodeValue solve();
+	virtual NodeValue solve();
 
 	void addParam(const std::string& name, ValueType type);
 
 	const NodeValue& param(const std::string& name) { return m_params[name]; }
+	RawValue& paramValue(const std::string& name) { return m_params[name].value; }
 
 	void setParam(const std::string& name, const RawValue& value) { m_params[name].value = value; m_changed = true; }
 	void setParam(const std::string& name, float v) { m_params[name].value[0] = v; m_changed = true; }

@@ -10,6 +10,8 @@
 #include "RadioSelector.h"
 #include "Panel.h"
 #include "NodeEditor.h"
+#include "Edit.h"
+#include "TextureView.h"
 
 #include "Animator.h"
 
@@ -61,7 +63,7 @@ public:
 		SlicedRect sideBarArea = bodyArea.cutLeft(320);
 		SlicedRect nodeGraphArea = bodyArea;
 
-		SlicedRect controlsArea = sideBarArea.cutTop(400);
+		SlicedRect controlsArea = sideBarArea.cutTop(320);
 		SlicedRect settingsArea = sideBarArea;
 		//
 
@@ -117,6 +119,13 @@ public:
 			if (singleNodeEditor) {
 				pnlSettings->addChild(singleNodeEditor);
 			}
+
+			OutputNode* out = dynamic_cast<OutputNode*>(node->node());
+			if (out) {
+				if (!out->texture) return;
+
+				previewControl->setTexture(out->texture.get());
+			}
 		};
 
 		ned->onParamChange = [=]() {
@@ -138,7 +147,21 @@ public:
 			pnlControls->addChild(btn);
 		}
 
-		int wgCount[3], wgSize[3];
+		// preview
+		Panel* pnlPreview = new Panel();
+		pnlPreview->title = "Preview";
+		pnlPreview->bounds = { int(app.window().size().first) - 268, int(app.window().size().second) - 268, 256, 256 };
+		pnlPreview->setLayout(new RowLayout(1));
+		gui->addControl(pnlPreview);
+
+		previewControl = new TextureView();
+		previewControl->bounds = { 8, 8, pnlPreview->bounds.width - 16, pnlPreview->bounds.height - 16 };
+		previewControl->setOrder(999);
+		gui->addControl(previewControl);
+		pnlPreview->addChild(previewControl);
+		//
+
+		/*int wgCount[3], wgSize[3];
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &wgCount[0]);
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &wgCount[1]);
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 2, &wgCount[2]);
@@ -149,7 +172,7 @@ public:
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 1, &wgSize[1]);
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_SIZE, 2, &wgSize[2]);
 
-		std::cout << "Work group size: " << wgSize[0] << ", " << wgSize[1] << ", " << wgSize[2] << '\n';
+		std::cout << "Work group size: " << wgSize[0] << ", " << wgSize[1] << ", " << wgSize[2] << '\n';*/
 
 	}
 
@@ -162,25 +185,6 @@ public:
 		nvgBeginFrame(ctx, width, height, 1.0f);
 
 		gui->renderAll(ctx, dt);
-
-		if (graph->output) {
-			if (image < 0) {
-				image = nvglCreateImageFromHandleGL3(
-					ctx,
-					graph->output->id(),
-					graph->output->size()[0],
-					graph->output->size()[1], 0
-				);
-			}
-
-			int x = app.window().size().first - 300;
-			int y = app.window().size().second - 300;
-			NVGpaint imgPaint = nvgImagePattern(ctx, x, y, 300, 300, 0.0f, image, 1.0f);
-			nvgBeginPath(ctx);
-			nvgRect(ctx, x, y, 300, 300);
-			nvgFillPaint(ctx, imgPaint);
-			nvgFill(ctx);
-		}
 
 		nvgEndFrame(ctx);
 	}
@@ -256,9 +260,10 @@ public:
 
 	GUISystem* gui;
 	Control* singleNodeEditor{ nullptr };
+
 	float bgColor[3] = { 0.1f, 0.2f, 0.4f };
 
-	int image{ -1 };
+	TextureView* previewControl;
 };
 
 int main(int argc, char** argv) {
