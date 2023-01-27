@@ -145,7 +145,8 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 
 						nvgBeginPath(ctx);
 						nvgCircle(ctx, socketRect.x + 5, socketRect.y + 5, 18.0f * m_proximityAnimation);
-						nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 0.5f, 0.5f));
+						nvgFillPaint(ctx, nvgRadialGradient(ctx, socketRect.x+5, socketRect.y+5, 1.0f, 18.0f * m_proximityAnimation, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f), nvgRGBAf(1.0f, 1.0f, 1.0f, 0.0f)));
+						//nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 0.5f, 0.5f));
 						nvgFill(ctx);
 
 						m_proximityAnimation -= deltaTime;
@@ -238,7 +239,7 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 						if (node->node()->input(i).connected) 
 						{
 							auto connections = getConnectionsTo(node);
-							VisualConnection connection = { nullptr, nullptr, SIZE_MAX, SIZE_MAX };
+							VisualConnection connection = { nullptr, nullptr, -1, -1 };
 							for (auto c : connections) {
 								if(c.destinationInput == i) {
 									connection = c;
