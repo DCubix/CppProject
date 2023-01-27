@@ -4,6 +4,7 @@
 #include "nanovg/nanovg.h"
 
 #include <array>
+#include <cmath>
 
 using ControlID = size_t;
 
@@ -16,6 +17,7 @@ enum class HorizontalAlignment {
 struct Rect {
 	int x{ 0 }, y{ 0 }, width{ 100 }, height{ 100 };
 
+	int distanceToPointSquared(Point p);
 	bool hasPoint(Point point);
 	Rect& inflate(int amount = 1);
 };

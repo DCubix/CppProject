@@ -103,6 +103,18 @@ Rect& Rect::inflate(int amount) {
 	return *this;
 }
 
+int Rect::distanceToPointSquared(Point p) {
+		
+		int insidePointX = std::clamp(p.x, x, x + width);
+		int insidePointY = std::clamp(p.x, y, y + height);
+		
+		int diffX = p.x - insidePointX;
+		int diffY = p.y - insidePointY;
+		
+		return diffX*diffX + diffY*diffY;
+
+	}
+
 SlicedRect SlicedRect::cutLeft(int size) {
 	int minX = minx;
 	minx = std::min(maxx, minx + size);
