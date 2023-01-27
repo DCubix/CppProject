@@ -111,13 +111,15 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 				int inputIndex = -1;
 				int distSquared = getClosestInput(m_mousePos, inputNode, inputIndex);
 				
-				if((inputNode != nullptr) && (inputIndex >= 0) && (inputNode != node)) {
+				if((inputNode != nullptr) && (inputIndex >= 0) && (inputNode != node)) 
+				{
 
-					if(distSquared < (9 * 9)) {
+					if(distSquared < (18 * 18)) 
+					{
 						Rect inRect = inputNode->getInputRect(inputIndex);
 
 						nvgBeginPath(ctx);
-						nvgCircle(ctx, inRect.x + 5, inRect.y + 5, 9.0f * m_proximityAnimation);
+						nvgCircle(ctx, inRect.x + 5, inRect.y + 5, 18.0f * m_proximityAnimation);
 						nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 0.5f, 0.5f));
 						nvgFill(ctx);
 
@@ -127,7 +129,9 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 							m_proximityAnimation += 1.0f;
 
 					}
-				} else {
+				} 
+				else 
+				{
 					m_proximityAnimation = 1.0f;
 				}
 
@@ -136,7 +140,9 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 			nvgRestore(ctx);
 			
 		}
-	}
+
+	} 
+
 
 	if (m_selectedNode) {
 		auto node = get(m_selectedNode);
@@ -207,6 +213,10 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 		}
 		else {
 			m_state = m_selectedOutput != -1 ? NodeEditorState::draggingConnection : NodeEditorState::draggingNode;
+
+			if(m_state == NodeEditorState::draggingConnection)
+					m_proximityAnimation = 1.0f;
+
 			if (clickedNode != m_selectedNode) {
 				m_selectedNode = clickedNode;
 				if (onSelect) onSelect(get(m_selectedNode));
@@ -217,17 +227,27 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 
 void NodeEditor::onMouseUp(int button, int x, int y) {
 	if (m_state == NodeEditorState::draggingConnection) {
-		for (auto&& node : m_nodes) {
-			for (size_t i = 0; i < node->inputCount(); i++) {
-				Rect outRect = node->getInputRect(i);
-				outRect.inflate(2);
-				if (outRect.hasPoint({ x, y })) {
-					VisualNode* source = get(m_selectedNode);
-					if (source != node.get()) { // Don't allow self-connection
-						connect(source, m_selectedOutput, node.get(), i);
-					}
-					break;
-				}
+		//for (auto&& node : m_nodes) {
+		//	for (size_t i = 0; i < node->inputCount(); i++) {
+		//		Rect outRect = node->getInputRect(i);
+		//		outRect.inflate(2);
+		//		if (outRect.hasPoint({ x, y })) {
+		//			VisualNode* source = get(m_selectedNode);
+		//			if (source != node.get()) { // Don't allow self-connection
+		//				connect(source, m_selectedOutput, node.get(), i);
+		//			}
+		//			break;
+		//		}
+		//	}
+		//}
+		{
+			VisualNode* source = get(m_selectedNode);
+			VisualNode* target = nullptr;
+			int input = -1;
+			int dist = getClosestInput({ x, y }, target, input);
+
+			if(target && input >= 0 && dist < (18 * 18)) {
+				connect(source, m_selectedOutput, target, input);
 			}
 		}
 	}
