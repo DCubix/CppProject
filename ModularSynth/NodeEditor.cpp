@@ -204,6 +204,38 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 					}
 				}
 
+				for (size_t i = 0; i < node->inputCount(); i++) {
+					Rect inRect = node->getInputRect(i);
+					inRect.inflate(2);
+					if (inRect.hasPoint({ x, y })) 
+					{
+						if (node->node()->input(i).connected) 
+						{
+							auto connections = getConnectionsTo(node);
+							VisualConnection connection = { nullptr, nullptr, SIZE_MAX, SIZE_MAX };
+							for (auto c : connections) {
+								if(c.destinationInput == i) {
+									connection = c;
+								}
+							}
+							if (connection.source && connection.destination) 
+							{
+								removeConnection(connection.source, connection.sourceOutput, connection.destination, connection.destinationInput);
+								m_selectedNode = connection.source->id();
+								m_selectedOutput = connection.sourceOutput;
+								m_state = NodeEditorState::draggingConnection;
+								clickedNode = m_selectedNode;
+								break;
+							}
+						}
+						else {
+							/* TODO dragging connection from output */
+						}
+							
+						break;
+					}
+				}
+
 				break;
 			}
 		}
@@ -229,9 +261,9 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 	if (m_state == NodeEditorState::draggingConnection) {
 		//for (auto&& node : m_nodes) {
 		//	for (size_t i = 0; i < node->inputCount(); i++) {
-		//		Rect outRect = node->getInputRect(i);
-		//		outRect.inflate(2);
-		//		if (outRect.hasPoint({ x, y })) {
+		//		Rect inRect = node->getInputRect(i);
+		//		inRect.inflate(2);
+		//		if (inRect.hasPoint({ x, y })) {
 		//			VisualNode* source = get(m_selectedNode);
 		//			if (source != node.get()) { // Don't allow self-connection
 		//				connect(source, m_selectedOutput, node.get(), i);
@@ -247,7 +279,8 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 			int dist = getClosestInput({ x, y }, target, input);
 
 			if(target && input >= 0 && dist < (18 * 18)) {
-				connect(source, m_selectedOutput, target, input);
+				if(!target->node()->input(input).connected) 
+					connect(source, m_selectedOutput, target, input);
 			}
 		}
 	}
@@ -578,10 +611,11 @@ void NodeEditor::connect(VisualNode* source, size_t sourceOutput, VisualNode* de
 		.destinationInput = destinationInput,
 		.sourceOutput = sourceOutput
 	};
-	m_connections.push_back(conn);
 
-	m_graph->connect(source->node(), sourceOutput, destination->node(), destinationInput);
-	m_graph->solve();
+	if(m_graph->connect(source->node(), sourceOutput, destination->node(), destinationInput)) {
+		m_connections.push_back(conn);
+		m_graph->solve();
+	}
 }
 
 void NodeEditor::removeConnection(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput) {

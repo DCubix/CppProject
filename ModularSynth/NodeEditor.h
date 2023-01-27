@@ -145,6 +145,7 @@ private:
 
 	size_t m_selectedNode{ 0 };
 	int m_selectedOutput{ -1 };
+	int m_selectedInput{ -1 };
 	NodeEditorState m_state{ NodeEditorState::idling };
 	Point m_mousePos{ 0, 0 };
 
