@@ -101,6 +101,10 @@ public:
 		return dynamic_cast<T*>(m_nodes.back().get());
 	}
 
+	int getClosestInput(Point p, VisualNode*& node, int& inputRectIndex);
+
+	int getClosestOutput(Point p, VisualNode*& node, int& inputRectIndex);
+
 	VisualNode* get(size_t id) {
 		auto pos = std::find_if(m_nodes.begin(), m_nodes.end(), [id](const std::unique_ptr<VisualNode>& ob) {
 			return ob->id() == id;
@@ -136,6 +140,8 @@ private:
 	std::vector<size_t> m_drawOrders;
 
 	std::unique_ptr<NodeGraph> m_graph;
+
+	float m_proximityAnimation = 0.0f;
 
 	size_t m_selectedNode{ 0 };
 	int m_selectedOutput{ -1 };

@@ -1,5 +1,7 @@
 #include "NodeEditor.h"
 
+#include <iostream>
+
 size_t NodeEditor::g_NodeID = 1;
 
 constexpr float titleFontSize = 15.0f;
@@ -104,7 +106,35 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 			nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.5f));
 			nvgFill(ctx);
 
+			{
+				VisualNode* inputNode;
+				int inputIndex = -1;
+				int distSquared = getClosestInput(m_mousePos, inputNode, inputIndex);
+				
+				if((inputNode != nullptr) && (inputIndex >= 0) && (inputNode != node)) {
+
+					if(distSquared < (9 * 9)) {
+						Rect inRect = inputNode->getInputRect(inputIndex);
+
+						nvgBeginPath(ctx);
+						nvgCircle(ctx, inRect.x + 5, inRect.y + 5, 9.0f * m_proximityAnimation);
+						nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 0.5f, 0.5f));
+						nvgFill(ctx);
+
+						m_proximityAnimation -= deltaTime;
+
+						if(m_proximityAnimation < 0.0f)
+							m_proximityAnimation += 1.0f;
+
+					}
+				} else {
+					m_proximityAnimation = 1.0f;
+				}
+
+			}
+
 			nvgRestore(ctx);
+			
 		}
 	}
 
@@ -290,6 +320,50 @@ void NodeEditor::onKeyRelease(int key) {
 	if (key == VK_SHIFT) {
 		m_shiftPressed = false;
 	}
+}
+
+int NodeEditor::getClosestInput(Point p, VisualNode*& node, int& inputRectIndex)
+{
+	int maxDistance = 0x7FFF'FFFF;
+	node = nullptr;
+	inputRectIndex = -1;
+	for(auto& n: m_nodes) 
+	{
+		for(int i = 0; i < n->inputCount(); i++)
+		{
+			Rect rect = n->getInputRect(i);
+			if(int dist = rect.distanceToPointSquared(p); dist < maxDistance) 
+			{
+				node = n.get();
+				inputRectIndex = i;
+				maxDistance = dist;
+			}
+		}
+	}
+
+	return maxDistance;
+}
+
+int NodeEditor::getClosestOutput(Point p, VisualNode*& node, int& inputRectIndex)
+{
+	int maxDistance = 0x7FFF'FFFF;
+	node = nullptr;
+	inputRectIndex = -1;
+	for(auto& n: m_nodes) 
+	{
+		for(int i = 0; i < n->outputCount(); i++)
+		{
+			Rect rect = node->getOutputRect(i);
+			if(int dist = rect.distanceToPointSquared(p); dist < maxDistance) 
+			{
+				node = n.get();
+				inputRectIndex = i;
+				dist = maxDistance;
+			}
+		}
+	}
+
+	return maxDistance;
 }
 
 Rect VisualNode::getOutputRect(size_t index) {
