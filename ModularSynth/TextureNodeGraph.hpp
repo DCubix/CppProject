@@ -339,7 +339,7 @@ public:
 		}
 	}
 
-	void render() {
+	void render(uint32_t width = 512, uint32_t height = 512) {
 		if (!generatedShader) return;
 
 		glUseProgram(generatedShader->id());
@@ -351,20 +351,15 @@ public:
 			OutputNode* out = dynamic_cast<OutputNode*>(node);
 			if (!out) continue;
 
-			out->beginRender(binding);
+			out->beginRender(width, height, binding);
 			generatedShader->uniformInt<1>(std::format("bOutput{}", nodeId), { int(binding) });
 			binding++;
 		}
 
 		setUniforms(binding);
-
-		for (const auto& nodeId : m_nodePath) {
-			auto node = get(nodeId);
-			OutputNode* out = dynamic_cast<OutputNode*>(node);
-			if (!out) continue;
-
-			out->endRender();
-		}
+		
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glDispatchCompute(width / 16, height / 16, 1);
 
 		glUseProgram(0);
 	}

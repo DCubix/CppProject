@@ -448,14 +448,9 @@ void emit_out_$NODE(in vec2 uv, vec4 color) {
 
 	void onCreate() {
 		addInput("Color", ValueType::vec4);
-		addParam("Size", ValueType::vec2);
-		setParam("Size", 512.0f, 512.0f);
 	}
 
-	void beginRender(size_t binding = 0) {
-		uint32_t width = uint32_t(paramValue("Size")[0]);
-		uint32_t height = uint32_t(paramValue("Size")[1]);
-
+	void beginRender(uint32_t width, uint32_t height, size_t binding = 0) {
 		if (!texture) {
 			texture = std::unique_ptr<Texture>(new Texture({ width, height }, GL_RGBA32F));
 		}
@@ -467,11 +462,6 @@ void emit_out_$NODE(in vec2 uv, vec4 color) {
 		}
 
 		glBindImageTexture(binding, texture->id(), 0, false, 0, GL_READ_WRITE, GL_RGBA32F);
-	}
-
-	void endRender() {
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-		glDispatchCompute(texture->size()[0] / 16, texture->size()[1] / 16, 1);
 	}
 
 	std::unique_ptr<Texture> texture;
