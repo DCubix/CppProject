@@ -28,6 +28,7 @@
 #include <format>
 #include <sstream>
 #include <array>
+#include <string_view>
 
 #include <iostream>
 
@@ -174,6 +175,15 @@ public:
 
 		std::cout << "Work group size: " << wgSize[0] << ", " << wgSize[1] << ", " << wgSize[2] << '\n';*/
 
+		if(const auto& args = app.args(); args.size() > 1) {
+
+			if(!openNodeGraph(args[1])) {
+				auto msg = std::format("Failed to open file '{}' !", args[1]);
+				MessageBoxA(NULL, msg.c_str(), "Error!", MB_OK);
+			}
+
+		}
+
 	}
 
 	void onUpdate(Application& app, float dt) {
@@ -202,29 +212,7 @@ public:
 			pfd::opt::none
 		);
 		if (!fp.result().empty()) {
-			olc::utils::datafile in{};
-			in.Read(in, fp.result().front());
-
-			// create nodes
-			for (size_t i = 0; i < in["nodes"].GetArraySize(); i++) {
-				auto&& val = in["nodes"].GetArrayItem(i);
-				auto&& node = createNewTextureNode(ned, val["type"].GetString());
-				node->position.x = val["position"].GetInt(0);
-				node->position.y = val["position"].GetInt(1);
-				static_cast<GraphicsNode*>(node->node())->loadFrom(val);
-
-				nodeTypeStorage[node->node()->id()] = { val["type"].GetString(), node->id() };
-			}
-
-			for (size_t i = 0; i < in["connections"].GetArraySize(); i++) {
-				auto&& val = in["connections"].GetArrayItem(i);
-				ned->connect(
-					ned->getFromOriginalNodeId(val["source"].GetInt()),
-					val["sourceOutput"].GetInt(),
-					ned->getFromOriginalNodeId(val["destination"].GetInt()),
-					val["destinationInput"].GetInt()
-				);
-			}
+			openNodeGraph(fp.result().front());
 		}
 	}
 
@@ -252,6 +240,37 @@ public:
 		}
 	}
 
+	bool openNodeGraph(const std::string_view& file) {
+
+		olc::utils::datafile in{};
+		if(!in.Read(in, std::string(file)))
+			return false;
+
+		// create nodes
+		for (size_t i = 0; i < in["nodes"].GetArraySize(); i++) {
+			auto&& val = in["nodes"].GetArrayItem(i);
+			auto&& node = createNewTextureNode(ned, val["type"].GetString());
+			node->position.x = val["position"].GetInt(0);
+			node->position.y = val["position"].GetInt(1);
+			static_cast<GraphicsNode*>(node->node())->loadFrom(val);
+
+			nodeTypeStorage[node->node()->id()] = { val["type"].GetString(), node->id() };
+		}
+
+		for (size_t i = 0; i < in["connections"].GetArraySize(); i++) {
+			auto&& val = in["connections"].GetArrayItem(i);
+			ned->connect(
+				ned->getFromOriginalNodeId(val["source"].GetInt()),
+				val["sourceOutput"].GetInt(),
+				ned->getFromOriginalNodeId(val["destination"].GetInt()),
+				val["destinationInput"].GetInt()
+			);
+		}
+
+		return true;
+
+	}
+
 	NVGcontext* ctx;
 
 	NodeEditor* ned;
@@ -268,7 +287,7 @@ public:
 
 int main(int argc, char** argv) {
 #if 1
-	Application* app = new Application(new Test());
+	Application* app = new Application(new Test(), argc, argv);
 	return app->run();
 #else
 
