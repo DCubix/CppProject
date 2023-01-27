@@ -31,7 +31,7 @@ void TextureView::onDraw(NVGcontext* ctx, float deltaTime) {
 		}
 	}
 	
-	//nvgIntersectScissor(ctx, 0, 0, b.width, b.height);
+	nvgIntersectScissor(ctx, 0, 0, b.width, b.height);
 	for (int x = 0; x < b.width; x += checkerboardSize) {
 		for (int y = 0; y < b.height; y += checkerboardSize) {
 			nvgBeginPath(ctx);

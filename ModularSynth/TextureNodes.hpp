@@ -427,12 +427,13 @@ public:
 	}
 };
 
+#include "Window.h"
 class OutputNode : public GraphicsNode {
 public:
 	std::string library() {
 		return R"(
-void emit_out_$NODE(in vec2 uv, in vec4 color) {
-	imageStore(bOutput$NODE, ivec2(uv * vec2(imageSize(bOutput$NODE))), color);
+void emit_out_$NODE(in vec2 uv, vec4 color) {
+	imageStore(bOutput$NODE, ivec2(uv * vec2(imageSize(bOutput$NODE))), vec4(uv, 1.0, 1.0));
 })";
 	}
 
@@ -465,7 +466,7 @@ void emit_out_$NODE(in vec2 uv, in vec4 color) {
 			}
 		}
 
-		glBindImageTexture(binding, texture->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);	
+		glBindImageTexture(binding, texture->id(), 0, false, 0, GL_READ_WRITE, GL_RGBA32F);
 	}
 
 	void endRender() {
