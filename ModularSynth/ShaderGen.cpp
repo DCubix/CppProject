@@ -210,7 +210,7 @@ void ShaderGen::convertType(ValueType from, ValueType to, const std::string& var
 
 std::string ShaderGen::appendUniform(ValueType type, const std::string& name, size_t binding) {
 	if (type == ValueType::image) {
-		m_targets[Target::uniforms] += std::format("readonly layout (rgba32f, binding={}) uniform image2D {};", binding, name);
+		m_targets[Target::uniforms] += std::format("layout (rgba32f, binding={}) uniform image2D {};", binding, name);
 	}
 	else {
 		m_targets[Target::uniforms] += std::format("uniform {} {};", typeStr[size_t(type)], name);

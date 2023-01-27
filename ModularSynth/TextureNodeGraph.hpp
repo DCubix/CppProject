@@ -51,7 +51,7 @@ public:
 			// Output nodes
 			if (dynamic_cast<OutputNode*>(node)) {
 				gen.beginCodeBlock();
-				gen.append(std::format("layout (rgba32f, binding={}) uniform image2D bOutput{};", m_imgId, node->id()));
+				gen.append(std::format("layout (rgba32f, binding={}) uniform image2D bOutput{};\n", m_imgId, node->id()));
 				gen.endCodeBlock(ShaderGen::Target::uniforms);
 				m_imgId++;
 			}
@@ -339,8 +339,10 @@ public:
 		}
 	}
 
-	void render() {
+	void render(uint32_t width = 512, uint32_t height = 512) {
 		if (!generatedShader) return;
+
+		glUseProgram(generatedShader->id());
 
 		// render outputs
 		size_t binding = 0;
@@ -349,19 +351,15 @@ public:
 			OutputNode* out = dynamic_cast<OutputNode*>(node);
 			if (!out) continue;
 
-			out->beginRender(binding++);
+			out->beginRender(width, height, binding);
+			generatedShader->uniformInt<1>(std::format("bOutput{}", nodeId), { int(binding) });
+			binding++;
 		}
 
-		glUseProgram(generatedShader->id());
-		setUniforms();
-
-		for (const auto& nodeId : m_nodePath) {
-			auto node = get(nodeId);
-			OutputNode* out = dynamic_cast<OutputNode*>(node);
-			if (!out) continue;
-
-			out->endRender();
-		}
+		setUniforms(binding);
+		
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+		glDispatchCompute(width / 16, height / 16, 1);
 
 		glUseProgram(0);
 	}
@@ -398,6 +396,7 @@ private:
 			case ValueType::vec4: shader->uniform<4>(name, nv.value); break;
 			case ValueType::image: {
 				glBindImageTexture(index, GLuint(nv.value[0]), 0, false, 0, GL_READ_ONLY, GL_RGBA32F);
+				shader->uniformInt<1>(name, { int(index) });
 			} break;
 		}
 	}
@@ -417,8 +416,8 @@ private:
 		}
 	}
 
-	void setUniforms() {
-		size_t binding = 1;
+	void setUniforms(size_t startBinding) {
+		size_t binding = startBinding;
 		for (size_t i = 0; i < m_nodePath.size(); i++) {
 			auto node = static_cast<GraphicsNode*>(get(m_nodePath[i]));
 			setNodeUniforms(node, binding);
