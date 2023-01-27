@@ -14,7 +14,9 @@ static double currentTimeMillis() {
 	return duration_cast<milliseconds>(now.time_since_epoch()).count() / 1000.0;
 }
 
-Application::Application(ApplicationAdapter* adapter) {
+Application::Application(ApplicationAdapter* adapter, int argc, char** argv) {
+	for(int i = 0; i < argc; i++)
+		m_arguments.push_back(argv[i]);
 	m_adapter = std::unique_ptr<ApplicationAdapter>(adapter);
 }
 

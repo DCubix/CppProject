@@ -36,7 +36,7 @@ NodeValue* Node::input(const std::string& in) {
 }
 
 
-void NodeGraph::connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput) {
+bool NodeGraph::connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput) {
 	Connection conn{
 		.source = source,
 		.destination = destination,
@@ -44,9 +44,14 @@ void NodeGraph::connect(Node* source, size_t sourceOutput, Node* destination, si
 		.sourceOutput = sourceOutput
 	};
 	source->m_outputs[sourceOutput].connected = true;
-	destination->m_inputs[destinationInput].connected = true;
-	m_connections.push_back(conn);
-	buildNodePath();
+	if (!destination->m_inputs[destinationInput].connected) 
+	{
+		destination->m_inputs[destinationInput].connected = true;
+		m_connections.push_back(conn);
+		buildNodePath();
+		return true;
+	}
+	return false;
 }
 
 void NodeGraph::removeConnection(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput) {

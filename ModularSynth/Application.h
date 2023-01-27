@@ -1,6 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <vector>
+#include <string_view>
+#include <span>
 
 #include "Window.h"
 #include "EventSystem.h"
@@ -19,7 +22,7 @@ public:
 	Application() = default;
 	~Application() = default;
 
-	Application(ApplicationAdapter* adapter);
+	Application(ApplicationAdapter* adapter, int argc = 0, char** argv = nullptr);
 
 	int run(int fpsCap = -1);
 
@@ -29,7 +32,10 @@ public:
 	MouseMotionEventSystem& motionEvents() { return m_mouseMotionEventSystem; }
 	KeyboardEventSystem& keyboardEvents() { return m_keyboardEventSystem; }
 
+	inline const std::vector<std::string_view>& args() const { return m_arguments; }
+
 private:
+	std::vector<std::string_view> m_arguments;
 	std::unique_ptr<Window> m_window;
 	std::unique_ptr<ApplicationAdapter> m_adapter;
 	float m_frameTime{ 0.0f };

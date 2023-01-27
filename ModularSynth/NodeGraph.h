@@ -95,7 +95,7 @@ public:
 		return nullptr;
 	}
 
-	void connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
+	bool connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
 	void removeConnection(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
 
 	virtual void solve();
