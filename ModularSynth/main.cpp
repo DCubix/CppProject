@@ -179,7 +179,7 @@ public:
 
 			if(!openNodeGraph(args[1])) {
 				auto msg = std::format("Failed to open file '{}' !", args[1]);
-				MessageBoxA(NULL, msg.c_str(), "Error!", MB_OK);
+				pfd::message message("Error!", msg, pfd::choice::ok, pfd::icon::error);
 			}
 
 		}

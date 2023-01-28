@@ -37,6 +37,8 @@ struct WindowEvent {
 
 	int screenX, screenY;
 	int deltaX, deltaY;
+	int wheel;
+	int deltaWheel;
 };
 
 struct WindowParams {
@@ -62,7 +64,9 @@ public:
 	void submitEvent(WindowEvent e);
 	int mouseX() const { return m_mouseX; }
 	int mouseY() const { return m_mouseY; }
+	int wheel() const { return m_mouseWheel; }
 	void updateMouse(int x, int y) { m_mouseX = x; m_mouseY = y; }
+	void updateWheel(int delta) { m_mouseWheel += delta; }
 
 private:
 	HWND m_handle{ nullptr };
@@ -74,4 +78,5 @@ private:
 
 	std::queue<WindowEvent> m_eventQueue;
 	int m_mouseX, m_mouseY; // For calculating deltas
+	int m_mouseWheel; //For accumulating wheel delta
 };

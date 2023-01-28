@@ -9,6 +9,7 @@ constexpr float bodyTextFontSize = 12.0f;
 constexpr int gapBetweenSides = 32;
 constexpr int gapBetweenInOuts = 4;
 constexpr int padding = 7;
+constexpr float socketVicinityRadius = 18.0f;
 
 static Point lerpPoint(Point a, Point b, float t) {
 	return {
@@ -144,8 +145,8 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 							socketRect = targetNode->getOutputRect(socketIndex);
 
 						nvgBeginPath(ctx);
-						nvgCircle(ctx, socketRect.x + 5, socketRect.y + 5, 18.0f * m_proximityAnimation);
-						nvgFillPaint(ctx, nvgRadialGradient(ctx, socketRect.x+5, socketRect.y+5, 1.0f, 18.0f * m_proximityAnimation, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f), nvgRGBAf(1.0f, 1.0f, 1.0f, 0.0f)));
+						nvgCircle(ctx, socketRect.x + 5, socketRect.y + 5, socketVicinityRadius * m_proximityAnimation);
+						nvgFillPaint(ctx, nvgRadialGradient(ctx, socketRect.x+5, socketRect.y+5, 1.0f, socketVicinityRadius * m_proximityAnimation, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f), nvgRGBAf(1.0f, 1.0f, 1.0f, 0.0f)));
 						//nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 0.5f, 0.5f));
 						nvgFill(ctx);
 
@@ -293,26 +294,13 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 
 void NodeEditor::onMouseUp(int button, int x, int y) {
 	if (m_state == NodeEditorState::draggingConnection) {
-		//for (auto&& node : m_nodes) {
-		//	for (size_t i = 0; i < node->inputCount(); i++) {
-		//		Rect socketRect = node->getInputRect(i);
-		//		socketRect.inflate(2);
-		//		if (socketRect.hasPoint({ x, y })) {
-		//			VisualNode* source = get(m_selectedNode);
-		//			if (source != node.get()) { // Don't allow self-connection
-		//				connect(source, m_selectedOutput, node.get(), i);
-		//			}
-		//			break;
-		//		}
-		//	}
-		//}
 		if(m_selectedOutput >= 0)  {
 			VisualNode* source = get(m_selectedNode);
 			VisualNode* target = nullptr;
 			int input = -1;
 			int dist = getClosestInput({ x, y }, target, input);
 
-			if(target && input >= 0 && dist < (18 * 18)) {
+			if(target && input >= 0 && dist < (socketVicinityRadius * socketVicinityRadius)) {
 				if(!target->node()->input(input).connected) 
 					connect(source, m_selectedOutput, target, input);
 			}
@@ -323,7 +311,7 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 			int output = -1;
 			int dist = getClosestOutput({ x, y }, target, output);
 
-			if(target && output >= 0 && dist < (18 * 18)) {
+			if(target && output >= 0 && dist < (socketVicinityRadius * socketVicinityRadius)) {
 				connect(target, output, source, m_selectedInput);
 			}
 		}

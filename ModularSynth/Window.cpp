@@ -92,7 +92,21 @@ static LRESULT CALLBACK win32WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 
 			win->submitEvent(ev);
 		} break;
+		case WM_MOUSEWHEEL: {
+			int wheelDelta = GET_WHEEL_DELTA_WPARAM(wParam);
+			
+			if(wheelDelta) {
+				wheelDelta = wheelDelta < 0 ? -1 : 1;
+			}
 
+			win->updateWheel(wheelDelta);
+
+			WindowEvent ev{};
+			ev.wheel = win->wheel();
+			ev.deltaWheel = wheelDelta;
+
+			win->submitEvent(ev);
+		} break;
 		case WM_CLOSE:
 		case WM_DESTROY:
 			PostQuitMessage(0);
