@@ -183,6 +183,7 @@
     <ClCompile Include="NodeGraph.cpp" />
     <ClCompile Include="Panel.cpp" />
     <ClCompile Include="RadioSelector.cpp" />
+    <ClCompile Include="ScrollBar.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ShaderGen.cpp" />
     <ClCompile Include="Slider.cpp" />
@@ -190,6 +191,7 @@
     <ClInclude Include="Edit.h" />
     <ClInclude Include="olcUTIL_DataFile.h" />
     <ClInclude Include="renderdoc_app.h" />
+    <ClInclude Include="ScrollBar.h" />
     <ClInclude Include="TextureNodeGraph.hpp" />
     <ClCompile Include="TextureNodeRegistry.cpp" />
     <ClCompile Include="TextureView.cpp" />
