@@ -352,15 +352,6 @@ static Control* gui_UVNode(GUISystem* gui, VisualNode* node) {
 	auto rep = gui_Vector<2ull>(gui, "Repeat", nd->paramValue("Repeat"));
 	pnl->addChild(rep);
 
-	auto spacing = gui_ValueSlider(
-		gui, "Spacing", nd->param("Spacing").value[0],
-		[=](float v) {
-			nd->setParam("Spacing", v);
-		},
-		0.0f, 1.0f, 0.01f
-	);
-	pnl->addChild(spacing);
-
 	auto pos = gui_Vector<2ull>(gui, "Position", nd->paramValue("Position"));
 	pnl->addChild(pos);
 

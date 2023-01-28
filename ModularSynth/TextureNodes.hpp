@@ -288,14 +288,20 @@ public:
 	outV = mix(m, 2.0 - m, step(1.0, m));
 }
 
-vec2 op_rep(in vec2 p, float c, vec2 lmax) {
-    return p - c * clamp(round(p / c), vec2(0.0), lmax);
+vec2 op_rep(in vec2 p, vec2 count) {
+    vec2 nuv = fract(p * count);
+    
+    if (count.y > count.x)
+        nuv.x *= max(count.x, count.y) / min(count.x, count.y);
+    else
+        nuv.y *= max(count.x, count.y) / min(count.x, count.y);
+    return nuv;
 }
 
 void out_uv(
 	vec2 uvIn, float clampMode, float deformAmt, vec2 deform,
 
-	vec2 repeat, float spacing,
+	vec2 repeatCount,
 
 	vec2 pos, vec2 scale, float rot,
 
@@ -309,25 +315,24 @@ void out_uv(
 
 	uv += ((deform * 2.0 - 1.0) * deformAmt);
 
-	uv.x -= 0.5;
 	uv.x *= sz.x / sz.y;
+	uv -= vec2(0.5);
 
 	mat2 xform =
 		mat2(scale.x, 0.0, 0.0, scale.y) *
 		mat2(c, -s, s, c);	
 	uv *= xform;
-	uv += pos;
+	uv += pos + vec2(0.5);
 
-	uv = op_rep(uv, spacing, repeat);
-
-	duv = uv;
 	if (clampMode == 0.0) { // clamp to edge
-		duv = clamp(duv, 0.0, 1.0);
+		uv = clamp(uv, 0.0, 1.0);
 	} else if (clampMode == 1.0) { // repeat
-		duv = mod(duv, 1.0);
+		uv = mod(uv, 1.0);
 	} else if (clampMode == 2.0) { // mirror
-		mirrored(duv, duv);
+		mirrored(uv, uv);
 	}
+
+	duv = op_rep(uv, repeatCount);
 }
 )";
 	}
@@ -340,8 +345,7 @@ void out_uv(
 			{ "clampMode", { "Clamp", SpecialType::none } },
 			{ "deformAmt", { "Deform Amount", SpecialType::none } },
 			{ "deform", { "Deform", SpecialType::none } },
-			{ "repeat", { "Repeat", SpecialType::none } },
-			{ "spacing", { "Spacing", SpecialType::none } },
+			{ "repeatCount", { "Repeat", SpecialType::none } },
 			{ "pos", { "Position", SpecialType::none } },
 			{ "scale", { "Scale", SpecialType::none } },
 			{ "rot", { "Rotation", SpecialType::none } }
@@ -352,7 +356,6 @@ void out_uv(
 		addInput("Deform", ValueType::vec2);
 
 		addParam("Repeat", ValueType::vec2);
-		addParam("Spacing", ValueType::scalar);
 
 		addParam("Position", ValueType::vec2);
 		addParam("Scale", ValueType::vec2);

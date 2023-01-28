@@ -26,7 +26,7 @@ public:
 		
 		std::string lib = "";
 
-		for (size_t i = 0; i < m_nodePath.size(); i++) {
+		for (size_t i = m_nodePath.size(); i-- > 0;) {
 			auto node = dynamic_cast<GraphicsNode*>(get(m_nodePath[i]));
 
 			// replace $ vars
@@ -318,7 +318,7 @@ private:
 
 	void setUniforms(size_t startBinding) {
 		size_t binding = startBinding;
-		for (size_t i = 0; i < m_nodePath.size(); i++) {
+		for (size_t i = m_nodePath.size(); i-- > 0;) {
 			auto node = static_cast<GraphicsNode*>(get(m_nodePath[i]));
 			setNodeUniforms(node, binding);
 		}
