@@ -1,43 +1,35 @@
 #pragma once
 
 #include "Control.h"
+
 #include <map>
 #include <memory>
 
-class Application;
+#include "nanovg/nanovg.h"
+
+template <typename T>
+concept ControlType = std::is_base_of<Control, T>::value;
+
 class GUISystem {
 public:
+	GUISystem();
+	~GUISystem();
 
-	void addControl(Control* control);
-	void removeControl(ControlID control);
+	void onEvent(WindowEvent ev);
+	void onDraw(int width, int height, float deltaTime);
 
-	void renderAll(NVGcontext* ctx, float deltaTime);
+	std::shared_ptr<Control> root() { return m_root; }
 
-	MouseButtonEventSystem& mouseEvents() { return *m_mouseButtonEventSystem; }
-	MouseMotionEventSystem& motionEvents() { return *m_mouseMotionEventSystem; }
-	KeyboardEventSystem& keyboardEvents() { return *m_keyboardEventSystem; }
-
-	void attachToApplication(Application& app);
-
-	void begin();
-	void end();
+	template <ControlType Ctrl, typename... Args>
+	Ctrl* create(Args&&... args) {
+		Ctrl* ctrl = new Ctrl(std::forward<Args>(args)...);
+		root()->addChild(ctrl);
+		return ctrl;
+	}
 
 private:
-	std::map<ControlID, std::shared_ptr<Control>> m_controls;
-	std::vector<std::pair<ControlID, size_t>> m_controlOrders;
+	std::shared_ptr<Control> m_root;
 
-	ControlID m_currentFocus{ 0 };
-
-	std::vector<Control*> m_controlsAdd;
-	std::vector<ControlID> m_controlsRemove;
-
-	MouseButtonEventSystem* m_mouseButtonEventSystem{};
-	MouseMotionEventSystem* m_mouseMotionEventSystem{};
-	KeyboardEventSystem* m_keyboardEventSystem{};
-
-	void createControl(Control* control);
-	void deleteControl(ControlID control);
-
-	static ControlID g_ControlID;
+	NVGcontext* m_context{ nullptr };
 };
 

@@ -7,6 +7,7 @@
 #include <cassert>
 #include <memory>
 
+
 template <typename EventType>
 class Listener {
 public:

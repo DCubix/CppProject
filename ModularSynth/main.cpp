@@ -21,10 +21,6 @@
 
 #include "ShaderGen.h"
 
-#include "nanovg/nanovg.h"
-#define NANOVG_GL3_IMPLEMENTATION
-#include "nanovg/nanovg_gl.h"
-
 #include <format>
 #include <sstream>
 #include <array>
@@ -47,18 +43,10 @@ public:
 	}
 
 	void onStart(Application& app) {
-		ctx = nvgCreateGL3(NVG_ANTIALIAS | NVG_STENCIL_STROKES);
-
-		nvgCreateFont(ctx, "default-bold", "fonts/os_bold.ttf");
-		nvgCreateFont(ctx, "default-bold-italic", "fonts/os_bold_italic.ttf");
-		nvgCreateFont(ctx, "default-italic", "fonts/os_italic.ttf");
-		nvgCreateFont(ctx, "default", "fonts/os_regular.ttf");
-		nvgFontFace(ctx, "default");
-
 		// UI layout
 		SlicedRect layoutMain{ 0, 0, app.window().size().first, app.window().size().second };
 
-		SlicedRect topBar = layoutMain.cutTop(42);
+		SlicedRect topBar = layoutMain.cutTop(54);
 		SlicedRect bodyArea = layoutMain;
 
 		SlicedRect sideBarArea = bodyArea.cutLeft(320);
@@ -69,24 +57,20 @@ public:
 		//
 
 		gui = new GUISystem();
-		gui->attachToApplication(app);
 
-		Panel* pnlSettings = new Panel();
+		Panel* pnlSettings = gui->create<Panel>();
 		pnlSettings->title = "Settings";
 		pnlSettings->setLayout(new ColumnLayout());
 		pnlSettings->bounds = settingsArea.toRect().inflate(-4);
-		gui->addControl(pnlSettings);
 
-		Panel* pnlControls = new Panel();
+		Panel* pnlControls = gui->create<Panel>();
 		pnlControls->title = "Controls";
 		pnlControls->setLayout(new ColumnFlowLayout());
 		pnlControls->bounds = controlsArea.toRect().inflate(-4);
-		gui->addControl(pnlControls);
 
-		Panel* pnlMenu = new Panel();
+		Panel* pnlMenu = gui->create<Panel>();
 		pnlMenu->drawBackground(false);
 		pnlMenu->bounds = topBar.toRect().inflate(-4);
-		gui->addControl(pnlMenu);
 
 		// menus
 		MenuItem menu[] = {
@@ -99,24 +83,24 @@ public:
 			menuButton->text = item.text;
 			menuButton->bounds = topBar.cutLeft(80).toRect().inflate(-4);
 			menuButton->onPress = item.action;
-			gui->addControl(menuButton);
+			//gui->addControl(menuButton);
 			pnlMenu->addChild(menuButton);
 		}
 		//
 
-		ned = new NodeEditor(new TextureNodeGraph());
-		graph = static_cast<TextureNodeGraph*>(ned->graph());
-
+		ned = gui->create<NodeEditor>(new TextureNodeGraph());
 		ned->bounds = nodeGraphArea.toRect().inflate(-4);
-		gui->addControl(ned);
+
+		graph = static_cast<TextureNodeGraph*>(ned->graph());
 
 		ned->onSelect = [=](VisualNode* node) {
 			if (singleNodeEditor) {
-				pnlSettings->removeChild(singleNodeEditor);
-				gui->removeControl(singleNodeEditor->id());
+				pnlSettings->removeChild(singleNodeEditor->id());
+				//gui->removeControl(singleNodeEditor->id());
 				singleNodeEditor = nullptr;
 			}
-			singleNodeEditor = createTextureNodeEditorGui(gui, node);
+
+			singleNodeEditor = createTextureNodeEditorGui(node);
 			if (singleNodeEditor) {
 				pnlSettings->addChild(singleNodeEditor);
 			}
@@ -138,7 +122,7 @@ public:
 			if (!ctor.onCreate) break;
 
 			Button* btn = new Button();
-			gui->addControl(btn);
+			//gui->addControl(btn);
 			btn->text = ctor.name;
 			btn->onPress = [=]() {
 				auto node = createNewTextureNode(ned, ctor.code);
@@ -153,12 +137,12 @@ public:
 		pnlPreview->title = "Preview";
 		pnlPreview->bounds = { int(app.window().size().first) - 268, int(app.window().size().second) - 268, 256, 256 };
 		pnlPreview->setLayout(new RowLayout(1));
-		gui->addControl(pnlPreview);
+		gui->root()->addChild(pnlPreview);
 
 		previewControl = new TextureView();
 		previewControl->bounds = { 8, 8, pnlPreview->bounds.width - 16, pnlPreview->bounds.height - 16 };
 		previewControl->setOrder(999);
-		gui->addControl(previewControl);
+		//gui->addControl(previewControl);
 		pnlPreview->addChild(previewControl);
 		//
 
@@ -186,21 +170,20 @@ public:
 
 	}
 
+	void onEvent(WindowEvent ev) {
+		gui->onEvent(ev);
+	}
+
 	void onUpdate(Application& app, float dt) {
 		auto [width, height] = app.window().size();
 
 		glClearColor(bgColor[0], bgColor[1], bgColor[2], 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
-		nvgBeginFrame(ctx, width, height, 1.0f);
-
-		gui->renderAll(ctx, dt);
-
-		nvgEndFrame(ctx);
+		gui->onDraw(width, height, dt);
 	}
 
 	void onExit() {
-		nvgDeleteGL3(ctx);
 		delete gui;
 	}
 
@@ -270,8 +253,6 @@ public:
 		return true;
 
 	}
-
-	NVGcontext* ctx;
 
 	NodeEditor* ned;
 	TextureNodeGraph* graph;

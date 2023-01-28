@@ -95,7 +95,7 @@ void Edit::onMouseDown(int button, int x, int y) {
 	}
 }
 
-void Edit::onType(TCHAR charCode) {
+bool Edit::onType(TCHAR charCode) {
 	if (m_focused && ::isprint(int(charCode)) && std::regex_match(std::string(1, char(charCode)), inputFilter)) {
 		text.insert(text.begin() + m_cursorX, char(charCode));
 		m_cursorX++;
@@ -103,7 +103,9 @@ void Edit::onType(TCHAR charCode) {
 		if (onChange) onChange(text);
 
 		resetCursor();
+		return true;
 	}
+	return false;
 }
 
 void Edit::resetCursor() {

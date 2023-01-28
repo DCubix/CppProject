@@ -6,7 +6,6 @@
 #include <span>
 
 #include "Window.h"
-#include "EventSystem.h"
 
 class Application;
 class ApplicationAdapter {
@@ -14,6 +13,7 @@ public:
 	virtual WindowParams onSetup() = 0;
 	virtual void onStart(Application& app) = 0;
 	virtual void onUpdate(Application& app, float deltaTime) = 0;
+	virtual void onEvent(WindowEvent ev) {}
 	virtual void onExit() = 0;
 };
 
@@ -28,10 +28,6 @@ public:
 
 	Window& window() { return *m_window.get(); }
 
-	MouseButtonEventSystem& mouseEvents() { return m_mouseButtonEventSystem; }
-	MouseMotionEventSystem& motionEvents() { return m_mouseMotionEventSystem; }
-	KeyboardEventSystem& keyboardEvents() { return m_keyboardEventSystem; }
-
 	inline const std::vector<std::string_view>& args() const { return m_arguments; }
 
 private:
@@ -40,8 +36,4 @@ private:
 	std::unique_ptr<ApplicationAdapter> m_adapter;
 	float m_frameTime{ 0.0f };
 	int m_frameCount{ 0 };
-
-	MouseButtonEventSystem m_mouseButtonEventSystem{};
-	MouseMotionEventSystem m_mouseMotionEventSystem{};
-	KeyboardEventSystem m_keyboardEventSystem{};
 };

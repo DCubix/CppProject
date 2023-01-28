@@ -41,37 +41,7 @@ int Application::run(int fpsCap) {
 		lastTime = currentTime;
 
 		// Event processing
-		switch (ev.type) {
-			case WindowEvent::keyboardKey: {
-				m_keyboardEventSystem.notify({
-					.keyCode = ev.keyCode,
-					.keyChar = ev.keyChar,
-					.state = ev.buttonState == WindowEvent::down ? ButtonState::pressed : ButtonState::released
-				});
-			} break;
-			case WindowEvent::textInput: {
-				m_keyboardEventSystem.notify({
-					.keyCode = 0,
-					.keyChar = ev.keyChar,
-					.state = ButtonState::pressed
-				});
-			} break;
-			case WindowEvent::mouseButton: {
-				m_mouseButtonEventSystem.notify({
-					.screenPosition = { .x = ev.screenX, .y = ev.screenY },
-					.button = ev.button,
-					.state = ev.buttonState == WindowEvent::down ? ButtonState::pressed : ButtonState::released
-				});
-			} break;
-			case WindowEvent::mouseMotion: {
-				m_mouseMotionEventSystem.notify({
-					.screenPosition = {.x = ev.screenX, .y = ev.screenY },
-					.deltaX = ev.deltaX,
-					.deltaY = ev.deltaY
-				});
-			} break;
-			default: break;
-		}
+		m_adapter->onEvent(ev);
 
 		m_adapter->onUpdate(*this, float(deltaTime));
 		m_window->swapBuffers();

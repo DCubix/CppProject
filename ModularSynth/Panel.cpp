@@ -1,10 +1,26 @@
 #include "Panel.h"
 
-constexpr float titleHeight = 40.0f;
+#include "GUISystem.h"
+
+constexpr float titleHeight = 38.0f;
 
 void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
+	// ordering
+	m_orders.clear();
+	for (auto&& [cid, ctrl] : m_children) {
+		m_orders.push_back({ cid, ctrl->m_order + m_order * 1000 });
+	}
+
+	std::sort(
+		m_orders.begin(),
+		m_orders.end(),
+		[](const std::pair<ControlID, size_t>& a, const std::pair<ControlID, size_t>& b) {
+			return a.second < b.second;
+		}
+	);
+
 	Rect b = bounds;
-	Rect dbounds = { 8, 8, b.width - 16, b.height - 16 };
+	Rect dbounds = { 1, 1, b.width - 2, b.height - 2 };
 
 	if (m_drawBackground) {
 		nvgBeginPath(ctx);
@@ -23,7 +39,7 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgText(ctx, 16.0f, titleHeight / 2 + 1.5f, title.c_str(), nullptr);
 	}
 
-	//nvgScissor(ctx, dbounds.x, dbounds.y, dbounds.width, dbounds.height);
+	nvgScissor(ctx, dbounds.x, dbounds.y, dbounds.width, dbounds.height);
 
 	if (onCustomPaint) {
 		nvgSave(ctx);
@@ -34,8 +50,16 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 	int index = 0;
 
 	if (m_layout) m_layout->beginLayout();
-	for (auto&& child : m_children) {
-		if (m_layout) m_layout->performLayout(child, { b.width, b.height - int(m_drawBackground ? titleHeight : 0) }, index);
+	for (auto&& [ childId, order ] : m_orders) {
+		auto&& child = m_children[childId];
+
+		if (m_layout) {
+			m_layout->performLayout(
+				child.get(),
+				{ b.width, b.height - int(m_drawBackground ? titleHeight : 0) },
+				index
+			);
+		}
 		
 		if (m_drawBackground && m_layout) {
 			child->bounds.y += titleHeight;
@@ -48,40 +72,44 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		child->onDraw(ctx, deltaTime);
 		nvgRestore(ctx);
 
+		nvgFillColor(ctx, nvgRGB(0, 255, 255));
+		nvgTextAlign(ctx, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
+		nvgText(ctx, cbounds.x, cbounds.y, std::to_string(child->id()).c_str(), nullptr);
+
 		index++;
 	}
 	if (m_layout) m_layout->endLayout();
+
+	/*nvgResetScissor(ctx);
+
+
+	nvgBeginPath(ctx);
+	nvgRect(ctx, 0, 0, b.width, b.height);
+	nvgStrokeColor(ctx, nvgRGB(0, 255, 255));
+	nvgStroke(ctx);*/
+}
+
+void Panel::onPostDraw(NVGcontext* ctx, float deltaTime) {
+	for (auto&& [childId, order] : m_orders) {
+		auto&& child = m_children[childId];
+
+		nvgSave(ctx);
+
+		// make local coordinates
+		Rect bounds = child->screenSpaceBounds();
+		nvgTranslate(ctx, bounds.x, bounds.y);
+
+		child->onPostDraw(ctx, deltaTime);
+		nvgRestore(ctx);
+	}
 }
 
 void Panel::setLayout(Layout* layout) {
 	m_layout.reset(layout);
 }
 
-void Panel::addChild(Control* control) {
-	control->parent(this);
-	m_children.push_back(control);
-}
-
-void Panel::removeChild(Control* control) {
-	control->parent(nullptr);
-	m_children.erase(
-		std::remove_if(
-			m_children.begin(), m_children.end(),
-			[control](Control* ctrl) { return ctrl->id() == control->id(); }
-		),
-		m_children.end()
-	);
-}
-
-void Panel::clearExtraControls() {
-	for (auto&& child : m_children) {
-		child->parent(nullptr);
-	}
-	m_children.clear();
-}
-
 void Panel::onMouseDown(int button, int x, int y) {
-	if (button == 1 && m_draggable && m_parent == nullptr) { // only drag top level panels
+	if (button == 1 && m_draggable && m_parent == 0) { // only drag top level panels
 		m_dragging = true;
 	}
 }
