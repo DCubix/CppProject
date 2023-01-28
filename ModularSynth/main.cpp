@@ -12,7 +12,6 @@
 #include "NodeEditor.h"
 #include "Edit.h"
 #include "TextureView.h"
-#include "ScrollBar.h"
 
 #include "Animator.h"
 
@@ -78,7 +77,6 @@ public:
 		pnlSettings->bounds = settingsArea.toRect().inflate(-4);
 		gui->addControl(pnlSettings);
 
-
 		Panel* pnlControls = new Panel();
 		pnlControls->title = "Controls";
 		pnlControls->setLayout(new ColumnFlowLayout());
@@ -111,15 +109,6 @@ public:
 
 		ned->bounds = nodeGraphArea.toRect().inflate(-4);
 		gui->addControl(ned);
-
-		scrollBar = new ScrollBar();
-		scrollBar->bounds = { 500, 100, 20, 200 };
-		scrollBar->pageMin = 0.f;
-		scrollBar->pageMax = 500.f;
-		scrollBar->pageSize = 100.f;
-		scrollBar->pageStep = 25.f;
-		scrollBar->orientation = SBOrientation::vertical;
-		gui->addControl(scrollBar);
 
 		ned->onSelect = [=](VisualNode* node) {
 			if (singleNodeEditor) {
@@ -207,12 +196,6 @@ public:
 
 		gui->renderAll(ctx, dt);
 
-		auto msg = std::format("{}", scrollBar->page);
-		nvgBeginPath(ctx);
-		nvgText(ctx, 500, 310, msg.data(), msg.data() + msg.size());
-		nvgFillColor(ctx, nvgRGBAf(1.f, 1.f, 1.f, 1.f));
-		nvgFill(ctx);
-
 		nvgEndFrame(ctx);
 	}
 
@@ -289,7 +272,7 @@ public:
 	}
 
 	NVGcontext* ctx;
-	ScrollBar* scrollBar;
+
 	NodeEditor* ned;
 	TextureNodeGraph* graph;
 	std::map<size_t, std::pair<std::string, size_t>> nodeTypeStorage;
