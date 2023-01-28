@@ -301,11 +301,14 @@ void out_uv(
 
 	out vec2 duv
 ) {
-	vec2 sz = imageSize(bOutput);
+	vec2 sz = bOutputSize;
 	float s = sin(rot);
 	float c = cos(rot);
 
 	vec2 uv = uvIn;
+
+	uv += ((deform * 2.0 - 1.0) * deformAmt);
+
 	uv.x -= 0.5;
 	uv.x *= sz.x / sz.y;
 
@@ -316,8 +319,6 @@ void out_uv(
 	uv += pos;
 
 	uv = op_rep(uv, spacing, repeat);
-
-	uv += ((deform * 2.0 - 1.0) * deformAmt);
 
 	duv = uv;
 	if (clampMode == 0.0) { // clamp to edge
@@ -356,6 +357,7 @@ void out_uv(
 		addParam("Position", ValueType::vec2);
 		addParam("Scale", ValueType::vec2);
 		addParam("Rotation", ValueType::scalar);
+		setParam("Scale", 1.0f, 1.0f);
 
 		addParam("Clamp", ValueType::scalar);
 
@@ -398,7 +400,7 @@ public:
 
 	std::string library() {
 		return R"(void gen_normal_map(in vec2 uv, float scale, out vec3 res) {
-	vec2 step = 1.0 / vec2(imageSize(bOutput));
+	vec2 step = 1.0 / bOutputSize;
 
 	float height = rgb_to_float($TREE(uv).rgb);
 	float s1 = rgb_to_float($TREE(uv + vec2(step.x, 0.0)).rgb);
@@ -433,7 +435,7 @@ public:
 	std::string library() {
 		return R"(
 void emit_out_$NODE(in vec2 uv, vec4 color) {
-	imageStore(bOutput$NODE, ivec2(uv * vec2(imageSize(bOutput$NODE))), vec4(uv, 1.0, 1.0));
+	imageStore(bOutput$NODE, ivec2(uv * vec2(imageSize(bOutput$NODE))), color);
 })";
 	}
 
@@ -450,7 +452,7 @@ void emit_out_$NODE(in vec2 uv, vec4 color) {
 		addInput("Color", ValueType::vec4);
 	}
 
-	void beginRender(uint32_t width, uint32_t height, size_t binding = 0) {
+	void render(uint32_t width, uint32_t height, size_t binding = 0) {
 		if (!texture) {
 			texture = std::unique_ptr<Texture>(new Texture({ width, height }, GL_RGBA32F));
 		}
@@ -461,7 +463,7 @@ void emit_out_$NODE(in vec2 uv, vec4 color) {
 			}
 		}
 
-		glBindImageTexture(binding, texture->id(), 0, false, 0, GL_READ_WRITE, GL_RGBA32F);
+		glBindImageTexture(binding, texture->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	}
 
 	std::unique_ptr<Texture> texture;

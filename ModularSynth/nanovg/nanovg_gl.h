@@ -352,8 +352,8 @@ static GLNVGtexture* glnvg__allocTexture(GLNVGcontext* gl)
 
 	for (i = 0; i < gl->ntextures; i++) {
 		if (gl->textures[i].id == 0) {
-			tex = &gl->textures[i];
-			break;
+			return &gl->textures[i];
+			// break;
 		}
 	}
 	if (tex == NULL) {
