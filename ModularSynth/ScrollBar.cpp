@@ -2,8 +2,6 @@
 #include "ScrollBar.h"
 
 
-constexpr float sliderHeight = 20.0f;
-constexpr float popupHeignt = 18.0f;
 constexpr float stepTime = 0.1f;
 
 inline void Rotate(float nx, float ny, float& x, float& y) {
@@ -50,50 +48,76 @@ inline void drawArrow(NVGcontext* ctx,  float x, float y, float radius, float di
 }
 
 void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
-
+	
 	//Bit nasty but this'll do
-	if(m_decreasing) {
-		if(stepTimer <= 0.f) {
-			page = std::clamp(page - pageStep, pageMin, pageMax - pageSize);
-			stepTimer += stepTime;
-		}
-		stepTimer -= deltaTime;
-	}
-
-	if(m_increasing) {
-		if(stepTimer <= 0.f) {
-			page = std::clamp(page + pageStep, pageMin, pageMax - pageSize);
-			stepTimer += stepTime;
-		}
-		stepTimer -= deltaTime;
-	}
-
-	if (m_dragging) {
-		float size = std::min(bounds.width, bounds.height);
-		switch(orientation) 
-		{
-			case SBOrientation::vertical: calculateValue(m_mousePos.y); break;
-			case SBOrientation::horizontal: calculateValue(m_mousePos.x); break;
-		}
-	}
+	update(deltaTime);
 
 	Rect b = bounds;
 	float size = std::min(b.width, b.height);
 	Rect sliderRect = {};
 
 	switch(orientation) {
-		case SBOrientation::horizontal: sliderRect = { 0, b.height / 2 - int(sliderHeight / 2), b.width, int(sliderHeight) }; break;
-		case SBOrientation::vertical: sliderRect = { b.width / 2 - int(sliderHeight / 2), 0, int(sliderHeight), b.height }; break;
+		case SBOrientation::horizontal: sliderRect = { 0, b.height / 2 - int(size / 2), b.width, int(size) }; break;
+		case SBOrientation::vertical: sliderRect = { b.width / 2 - int(size / 2), 0, int(size), b.height }; break;
 	}
 
 	const float radius = (size / 2) - 2;
 	
+	bool vertical = orientation == SBOrientation::vertical;
+	Rect posQuickScroll = positiveQuickScrollArea();
+	Rect negQuickScroll = negativeQuickScrollArea();
 
 	//Background
 	nvgBeginPath(ctx);
 	nvgRoundedRect(ctx, sliderRect.x, sliderRect.y, sliderRect.width, sliderRect.height, radius);
 	nvgFillColor(ctx, nvgRGBAf(0.0f, 0.0f, 0.0f, 0.6f));
 	nvgFill(ctx);
+
+	Rect* rct = nullptr;
+	bool visualizeQuickScroll = false;
+	if(posQuickScroll.hasPoint(m_mousePos)) {
+		rct = &posQuickScroll;
+		visualizeQuickScroll = true;
+	}
+	else if(negQuickScroll.hasPoint(m_mousePos)) {
+		rct = &negQuickScroll;
+		visualizeQuickScroll = true;
+	}
+
+	if(visualizeQuickScroll) {
+		
+		int w = rct->width;
+		int h = rct->height;
+		if(vertical) w /= 2; else h /= 2;
+
+		nvgBeginPath(ctx);
+		nvgRect(ctx, rct->x, rct->y, w, h);
+		auto paint = nvgLinearGradient(
+			ctx, 
+			0, 
+			0, 
+			vertical ? w : 0, 
+			vertical ? 0 : h, 
+			nvgRGBAf(1.f, 1.f, 1.f, 0.f),
+			nvgRGBAf(1.f, 1.f, 1.f, 0.25f)
+		);
+		nvgFillPaint(ctx, paint);
+		nvgFill(ctx);
+
+		nvgBeginPath(ctx);
+		nvgRect(ctx, rct->x + (vertical ? w : 0), rct->y + (vertical ? 0 : h), w, h);
+		paint = nvgLinearGradient(
+			ctx, 
+			vertical ? w : 0, 
+			vertical ? 0 : h, 
+			vertical ? w * 2 : 0, 
+			vertical ? 0 : h * 2, 
+			nvgRGBAf(1.f, 1.f, 1.f, 0.25f),
+			nvgRGBAf(1.f, 1.f, 1.f, 0.f)
+		);
+		nvgFillPaint(ctx, paint);
+		nvgFill(ctx);
+	}
 
 
 	//Render the buttons
@@ -103,27 +127,27 @@ void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
 				if(m_mousePos.y < size) {
 					if(m_decreasing) {
 						nvgBeginPath(ctx);
-						nvgRoundedRect(ctx, 0, 0, size, size, radius);
+						nvgRoundedRectVarying(ctx, 0, 0, size, size, radius, radius, 0, 0);
 						nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f));
 						nvgFill(ctx);
 					}
 					else {
 						nvgBeginPath(ctx);
-						nvgRoundedRect(ctx, 0, 0, size, size, radius);
-						nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f));
+						nvgRoundedRectVarying(ctx, 0, 0, size, size, radius, radius, 0, 0);
+						nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.75f));
 						nvgStroke(ctx);
 					}
 				} else if(m_mousePos.y > bounds.height - size) {
 					if(m_increasing) {
 						nvgBeginPath(ctx);
-						nvgRoundedRect(ctx, 0, sliderRect.height-size, size, size, radius);
+						nvgRoundedRectVarying(ctx, 0, sliderRect.height-size, size, size, 0, 0, radius, radius);
 						nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f));
 						nvgFill(ctx);
 					}
 					else {
 						nvgBeginPath(ctx);
-						nvgRoundedRect(ctx, 0, sliderRect.height-size, size, size, radius);
-						nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f));
+						nvgRoundedRectVarying(ctx, 0, sliderRect.height-size, size, size, 0, 0, radius, radius);
+						nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.75f));
 						nvgStroke(ctx);
 					}
 				}
@@ -132,27 +156,27 @@ void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
 				if(m_mousePos.x < size) {
 					if(m_decreasing) {
 						nvgBeginPath(ctx);
-						nvgRoundedRect(ctx, 0, 0, size, size, radius);
+						nvgRoundedRectVarying(ctx, 0, 0, size, size, radius, 0.0f, 0.0f, radius);
 						nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f));
 						nvgFill(ctx);
 					}
 					else {
 						nvgBeginPath(ctx);
-						nvgRoundedRect(ctx, 0, 0, size, size, radius);
-						nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f));
+						nvgRoundedRectVarying(ctx, 0, 0, size, size, radius, 0.0f, 0.0f, radius);
+						nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.75f));
 						nvgStroke(ctx);
 					}
 				} else if(m_mousePos.x > bounds.width - size) {
 					if(m_increasing) {
 						nvgBeginPath(ctx);
-						nvgRoundedRect(ctx, sliderRect.width-size, 0, size, size, radius);
+						nvgRoundedRectVarying(ctx, bounds.width - size, 0, size, size, 0.0f, radius, radius, 0.0f);
 						nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f));
 						nvgFill(ctx);
 					}
 					else {
 						nvgBeginPath(ctx);
-						nvgRoundedRect(ctx, sliderRect.width-size, 0, size, size, radius);
-						nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f));
+						nvgRoundedRectVarying(ctx, bounds.width - size, 0, size, size, 0.0f, radius, radius, 0.0f);
+						nvgStrokeColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 0.75f));
 						nvgStroke(ctx);
 					}
 				}
@@ -164,9 +188,16 @@ void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
 
 	nvgBeginPath(ctx);
 	
+	float t = (page - pageMin) / (pageMax - pageMin - pageSize);
+
+	float lowRadius = (1.0f - t) * radius;
+	float highRadius = t * radius;
+
 	auto handle = handleRect();
-	nvgRoundedRect(ctx, handle.x, handle.y, handle.width, handle.height, radius);
-	
+	if(vertical)
+		nvgRoundedRectVarying(ctx, handle.x, handle.y, handle.width, handle.height, highRadius, highRadius, lowRadius, lowRadius);
+	else
+		nvgRoundedRectVarying(ctx, handle.x, handle.y, handle.width, handle.height, lowRadius, highRadius, highRadius, lowRadius);
 	nvgFillColor(ctx, nvgRGBf(1.0f, 1.0f, 1.0f));
 	nvgFill(ctx);
 
@@ -195,6 +226,8 @@ void ScrollBar::onMouseDown(int button, int x, int y) {
 	if (button == 1) {
 
 		auto handle = handleRect();
+		auto positiveQuickScroll = positiveQuickScrollArea();
+		auto negativeQuickScroll = negativeQuickScrollArea();
 		float size = std::min(bounds.width, bounds.height);
 		m_grabCoords = { x - handle.x, y - handle.y };
 		switch(orientation) 
@@ -211,6 +244,13 @@ void ScrollBar::onMouseDown(int button, int x, int y) {
 				else {
 					if(handle.hasPoint(Point{ x, y })) 
 						m_dragging = true;
+					else if(positiveQuickScroll.hasPoint({ x, y })) {
+						m_increasing = true;
+						m_quickMode = true;
+					} else if(negativeQuickScroll.hasPoint({x, y})) {
+						m_decreasing = true;
+						m_quickMode = true;
+					}
 				}
 			break;
 			case SBOrientation::horizontal: 
@@ -225,6 +265,13 @@ void ScrollBar::onMouseDown(int button, int x, int y) {
 				else {
 					if(handle.hasPoint(Point{ x, y })) 
 						m_dragging = true;
+					else if(positiveQuickScroll.hasPoint({ x, y })) {
+						m_increasing = true;
+						m_quickMode = true;
+					} else if(negativeQuickScroll.hasPoint({x, y})) {
+						m_decreasing = true;
+						m_quickMode = true;
+					}
 				}
 			break;
 		}
@@ -287,6 +334,62 @@ void ScrollBar::calculateValue(int val) {
 		page = newPage;
 		if (onChange) onChange(page);
 	}
+}
+
+void ScrollBar::update(float deltaTime) {
+
+	auto handle = handleRect();
+
+	if(m_quickMode && handle.hasPoint(m_mousePos)) {
+		m_quickMode = false;
+		m_decreasing = false;
+		m_increasing = false;
+	}
+
+	if(m_decreasing) {
+
+		if(m_quickMode) {
+	
+			if(stepTimer <= 0.0f) {
+				page = std::clamp(page - pageSize, pageMin, pageMax - pageSize);
+				stepTimer += stepTime;
+			}
+		}
+		else {
+			if(stepTimer <= 0.0f) {
+				page = std::clamp(page - pageStep, pageMin, pageMax - pageSize);
+				stepTimer += stepTime;
+			}
+		}
+		stepTimer -= deltaTime;
+	}
+
+	if(m_increasing) {
+		if(m_quickMode) {
+			if(stepTimer <= 0.0f && !handle.hasPoint(m_mousePos)) {
+				page = std::clamp(page + pageSize, pageMin, pageMax - pageSize);
+				stepTimer += stepTime;
+			}
+		}
+		else {
+			if(stepTimer <= 0.0f) {
+				page = std::clamp(page + pageStep, pageMin, pageMax - pageSize);
+				stepTimer += stepTime;
+			}
+		}
+		stepTimer -= deltaTime;
+	}
+	
+
+	if (m_dragging) {
+		float size = std::min(bounds.width, bounds.height);
+		switch(orientation) 
+		{
+			case SBOrientation::vertical: calculateValue(m_mousePos.y); break;
+			case SBOrientation::horizontal: calculateValue(m_mousePos.x); break;
+		}
+	}
+
 }
 
 Rect ScrollBar::handleArea() {

@@ -29,12 +29,16 @@ public:
 	SBOrientation orientation = SBOrientation::horizontal;
 
 private:
+	
+	void update(float deltaTime);
+
 	Animator<float> m_anim{};
 
 	Point m_mousePos;
 	Point m_grabCoords;
 	bool m_active;
 	bool m_dragging{ false };
+	bool m_quickMode{ false };
 	bool m_increasing{ false };
 	bool m_decreasing{ false };
 
