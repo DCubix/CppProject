@@ -13,23 +13,7 @@ void Control::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgStroke(ctx);*/
 }
 
-void Control::checkFocus() {
-	if (m_focusRequested) {
-		auto curr = child(m_currentFocus);
-		if (curr) curr->m_focused = false;
-		m_focused = true;
-		m_currentFocus = m_id;
-	}
-	else {
-		for (auto&& [cid, ctrl] : m_children) {
-			ctrl->checkFocus();
-		}
-	}
-}
-
 bool Control::onEvent(WindowEvent ev) {
-	checkFocus();
-
 	std::vector<std::pair<ControlID, size_t>> orders;
 	for (auto&& [cid, ctrl] : m_children) {
 		orders.push_back({ cid, ctrl->m_order + m_order * 1000 });
@@ -185,20 +169,29 @@ bool Control::handleMouseMotion(WindowEvent ev) {
 }
 
 bool Control::handleKeyEvent(WindowEvent ev) {
-	if (ev.keyCode != 0) {
-		if (ev.buttonState == WindowEvent::down) {
-			onKeyPress(ev.keyCode);
-		}
-		else {
-			onKeyRelease(ev.keyCode);
-		}
-		return true;
+	if (ev.buttonState == WindowEvent::down) {
+		return onKeyPress(ev.keyCode);
 	}
-	return false;
+	else {
+		return onKeyRelease(ev.keyCode);
+	}
 }
 
 bool Control::handleTextInput(WindowEvent ev) {
 	return onType(ev.keyChar);
+}
+
+Control* Control::withFocusRequest() {
+	if (m_focusRequested) {
+		return this;
+	}
+	else {
+		for (const auto& [cid, ctrl] : m_children) {
+			auto ctrlPtr = ctrl->withFocusRequest();
+			if (ctrlPtr) return ctrlPtr;
+		}
+	}
+	return nullptr;
 }
 
 bool Rect::hasPoint(Point point) {

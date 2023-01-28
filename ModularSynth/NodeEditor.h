@@ -78,8 +78,8 @@ public:
 	void onMouseMove(int x, int y, int dx, int dy) override;
 	void onMouseLeave() override;
 
-	void onKeyPress(int key) override;
-	void onKeyRelease(int key) override;
+	bool onKeyPress(int key) override;
+	bool onKeyRelease(int key) override;
 
 	template <NodeObject U, VisualNodeObject T = VisualNode>
 	T* create(const std::string& name, const std::string& code, Color color) {

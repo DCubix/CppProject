@@ -29,6 +29,7 @@ public:
 
 private:
 	std::shared_ptr<Control> m_root;
+	Control* m_currentFocus{ nullptr };
 
 	NVGcontext* m_context{ nullptr };
 };

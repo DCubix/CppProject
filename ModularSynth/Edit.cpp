@@ -55,8 +55,8 @@ void Edit::onDraw(NVGcontext* ctx, float deltaTime) {
 	}
 }
 
-void Edit::onKeyPress(int keyCode) {
-	if (!m_focused) return;
+bool Edit::onKeyPress(int keyCode) {
+	if (!m_focused) return false;
 
 	switch (keyCode) {
 		case VK_RIGHT: m_cursorX = std::min(text.size(), m_cursorX + 1); break;
@@ -75,9 +75,11 @@ void Edit::onKeyPress(int keyCode) {
 		} break;
 		case VK_HOME: m_cursorX = 0; break;
 		case VK_END: m_cursorX = text.size(); break;
+		default: resetCursor(); return false;
 	}
 
 	resetCursor();
+	return true;
 }
 
 void Edit::onMouseDown(int button, int x, int y) {

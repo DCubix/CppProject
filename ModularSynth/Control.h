@@ -72,8 +72,8 @@ public:
 	virtual void onMouseLeave() {}
 	virtual void onFocus() {}
 	virtual void onBlur() {}
-	virtual void onKeyPress(int keyCode) {}
-	virtual void onKeyRelease(int keyCode) {}
+	virtual bool onKeyPress(int keyCode) { return false; }
+	virtual bool onKeyRelease(int keyCode) { return false; }
 	virtual bool onType(TCHAR charCode) { return false; }
 
 	virtual std::vector<Control*> onGetExtraControls() { return std::vector<Control*>(); }
@@ -123,6 +123,6 @@ protected:
 	bool handleKeyEvent(WindowEvent ev);
 	bool handleTextInput(WindowEvent ev);
 
-	void checkFocus();
+	Control* withFocusRequest();
 };
 

@@ -9,7 +9,7 @@
 class Edit : public Control {
 public:
 	void onDraw(NVGcontext* ctx, float deltaTime) override;
-	void onKeyPress(int keyCode) override;
+	bool onKeyPress(int keyCode) override;
 	bool onType(TCHAR charCode) override;
 
 	void onMouseDown(int button, int x, int y) override;

@@ -28,6 +28,18 @@ GUISystem::~GUISystem() {
 
 void GUISystem::onEvent(WindowEvent ev) {
 	m_root->onEvent(ev);
+
+	Control* controlToFocus = m_root->withFocusRequest();
+	if (controlToFocus) {
+		if (m_currentFocus) {
+			m_currentFocus->m_focused = false;
+			m_currentFocus->onBlur();
+		}
+		m_currentFocus = controlToFocus;
+		m_currentFocus->m_focused = true;
+		m_currentFocus->onFocus();
+		controlToFocus->m_focusRequested = false;
+	}
 }
 
 void GUISystem::onDraw(int width, int height, float deltaTime) {
