@@ -189,6 +189,7 @@ void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgBeginPath(ctx);
 	
 	float t = (page - pageMin) / (pageMax - pageMin - pageSize);
+	t = (t * t * (3.0f - 2.0f * t));
 
 	float lowRadius = (1.0f - t) * radius;
 	float highRadius = t * radius;
@@ -197,7 +198,7 @@ void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
 	if(vertical)
 		nvgRoundedRectVarying(ctx, handle.x, handle.y, handle.width, handle.height, highRadius, highRadius, lowRadius, lowRadius);
 	else
-		nvgRoundedRectVarying(ctx, handle.x, handle.y, handle.width, handle.height, lowRadius, highRadius, highRadius, lowRadius);
+		nvgRoundedRectVarying(ctx, handle.x, handle.y, handle.width, handle.height, highRadius, lowRadius, lowRadius, highRadius);
 	nvgFillColor(ctx, nvgRGBf(1.0f, 1.0f, 1.0f));
 	nvgFill(ctx);
 
@@ -242,12 +243,12 @@ void ScrollBar::onMouseDown(int button, int x, int y) {
 					m_increasing = true;
 				}
 				else {
-					if(handle.hasPoint(Point{ x, y })) 
+					if(handle.hasPoint(m_mousePos)) 
 						m_dragging = true;
-					else if(positiveQuickScroll.hasPoint({ x, y })) {
+					else if(positiveQuickScroll.hasPoint(m_mousePos)) {
 						m_increasing = true;
 						m_quickMode = true;
-					} else if(negativeQuickScroll.hasPoint({x, y})) {
+					} else if(negativeQuickScroll.hasPoint(m_mousePos)) {
 						m_decreasing = true;
 						m_quickMode = true;
 					}
@@ -263,12 +264,12 @@ void ScrollBar::onMouseDown(int button, int x, int y) {
 					m_increasing = true;
 				}
 				else {
-					if(handle.hasPoint(Point{ x, y })) 
+					if(handle.hasPoint(m_mousePos)) 
 						m_dragging = true;
-					else if(positiveQuickScroll.hasPoint({ x, y })) {
+					else if(positiveQuickScroll.hasPoint(m_mousePos)) {
 						m_increasing = true;
 						m_quickMode = true;
-					} else if(negativeQuickScroll.hasPoint({x, y})) {
+					} else if(negativeQuickScroll.hasPoint(m_mousePos)) {
 						m_decreasing = true;
 						m_quickMode = true;
 					}
