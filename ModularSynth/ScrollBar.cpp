@@ -68,6 +68,15 @@ void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
 		stepTimer -= deltaTime;
 	}
 
+	if (m_dragging) {
+		float size = std::min(bounds.width, bounds.height);
+		switch(orientation) 
+		{
+			case SBOrientation::vertical: calculateValue(m_mousePos.y); break;
+			case SBOrientation::horizontal: calculateValue(m_mousePos.x); break;
+		}
+	}
+
 	Rect b = bounds;
 	float size = std::min(b.width, b.height);
 	Rect sliderRect = {};
@@ -238,14 +247,6 @@ void ScrollBar::onMouseMove(int x, int y, int dx, int dy) {
 
 	m_mousePos = { x, y };
 
-	if (m_dragging) {
-		float size = std::min(bounds.width, bounds.height);
-		switch(orientation) 
-		{
-			case SBOrientation::vertical: calculateValue(y); break;
-			case SBOrientation::horizontal: calculateValue(x); break;
-		}
-	}
 }
 
 void ScrollBar::onMouseEnter() 
