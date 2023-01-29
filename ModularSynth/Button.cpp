@@ -6,8 +6,8 @@ void Button::onDraw(NVGcontext* ctx, float deltaTime) {
 	float hoverValue = m_hoverAnimator.value(Curves::easeInOutQuad, deltaTime);
 	float clickValue = m_clickAnimator.value(Curves::easeInOutQuad, deltaTime);
 
-	float clickAlphaValue = LERP(0.6f, 1.0f, clickValue);
-	float clickBgValue = LERP(0.0f, 1.0f, clickValue);
+	float clickAlphaValue = std::lerp(0.6f, 1.0f, clickValue);
+	float clickBgValue = std::lerp(0.0f, 1.0f, clickValue);
 	float clickFgValue = 1.0f - clickBgValue;
 
 	float scl = clickValue * 2.0f;
@@ -29,23 +29,22 @@ void Button::onDraw(NVGcontext* ctx, float deltaTime) {
 }
 
 void Button::onMouseDown(int button, int x, int y) {
-	m_clickAnimator.forward(1.0f, 0.0f, 0.25f);
-	m_hoverAnimator.reverse(dur);
+	m_clickAnimator.target(1.0f, dur);
 }
 
 void Button::onMouseUp(int button, int x, int y) {
-	m_clickAnimator.reverse(dur);
+	m_clickAnimator.target(0.0f, dur);
 	if (button == 1 && onPress) {
 		onPress();
 	}
 }
 
 void Button::onMouseEnter() {
-	m_hoverAnimator.forward(1.0f, 0.0f, dur);
-	m_clickAnimator.reset();
+	m_hoverAnimator.target(1.0f, dur);
+	m_clickAnimator.target(0.0f, dur);
 }
 
 void Button::onMouseLeave() {
-	m_hoverAnimator.reverse(dur);
-	m_clickAnimator.reset();
+	m_hoverAnimator.target(0.0f, dur);
+	m_clickAnimator.target(0.0f, dur);
 }

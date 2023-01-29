@@ -8,7 +8,7 @@ static void drawButton(
 	float bgBright = 0.0f,
 	float borderAlpha = 0.0f)
 {
-	float bgAlpha = LERP(0.6f, 1.0f, bgBright);
+	float bgAlpha = std::lerp(0.6f, 1.0f, bgBright);
 	nvgBeginPath(ctx);
 	nvgRoundedRectVarying(ctx, x, y, w, h, radiusLeft, radiusRight, radiusRight, radiusLeft);
 	nvgFillColor(ctx, nvgRGBAf(bgBright, bgBright, bgBright, bgAlpha));
@@ -69,11 +69,11 @@ void RadioSelector::onDraw(NVGcontext* ctx, float deltaTime) {
 void RadioSelector::onMouseDown(int btn, int x, int y) {
 	const int button = getOption(x, y);
 	if (m_selectedValue != button) {
-		m_clickAnimators[m_selectedValue].reverse(dur);
+		m_clickAnimators[m_selectedValue].target(0.0f, dur);
 
 		m_selectedValue = button;
-		m_clickAnimators[m_selectedValue].forward(1.0f, 0.0f, dur);
-		m_hoverAnimators[m_selectedValue].reset();
+		m_clickAnimators[m_selectedValue].target(1.0f, dur);
+		m_hoverAnimators[m_selectedValue].target(0.0f, 0.01f);
 
 		if (onSelect) onSelect(m_selectedValue);
 	}
@@ -83,20 +83,20 @@ void RadioSelector::onMouseMove(int x, int y, int dx, int dy) {
 	const int button = getOption(x, y);
 
 	if (m_hoveredValue != button && m_buttonStates[m_hoveredValue]) {
-		m_hoverAnimators[m_hoveredValue].reverse(dur);
+		m_hoverAnimators[m_hoveredValue].target(0.0f, dur);
 		m_buttonStates[m_hoveredValue] = false;
 	}
 
 	m_hoveredValue = button;
 	if (!m_buttonStates[m_hoveredValue]) {
-		m_hoverAnimators[m_hoveredValue].forward(1.0f, 0.0f, dur);
+		m_hoverAnimators[m_hoveredValue].target(1.0f, dur);
 		m_buttonStates[m_hoveredValue] = true;
 	}
 }
 
 void RadioSelector::onMouseLeave() {
 	if (m_hoveredValue != -1) {
-		m_hoverAnimators[m_hoveredValue].reverse(dur);
+		m_hoverAnimators[m_hoveredValue].target(0.0f, dur);
 		m_buttonStates[m_hoveredValue] = false;
 	}
 }

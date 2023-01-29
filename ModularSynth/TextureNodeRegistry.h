@@ -27,7 +27,7 @@ static constexpr Color multisampleNodeColor = hex2rgbf(0x59cf36);
 static constexpr Color resultNodeColor = hex2rgbf(0x256bdb);
 
 /* UI Editing */
-using GuiBuilder = std::function<Control* (GUISystem*, VisualNode*)>;
+using GuiBuilder = std::function<Control* (VisualNode*)>;
 
 /* ========== */
 
@@ -44,7 +44,6 @@ struct NodeContructor {
 }
 
 static Control* gui_ValueSlider(
-	GUISystem* gui,
 	const std::string& label,
 	float value,
 	const std::function<void(float)> setter,
@@ -52,42 +51,35 @@ static Control* gui_ValueSlider(
 	float max = 1.0f,
 	float step = 0.05f
 ) {
-	Slider* sld = new Slider();
-	gui->addControl(sld);
-
-	sld->min = min;
-	sld->max = max;
-	sld->step = step;
-
-	sld->value = value;
-	sld->onChange = [=](float v) {
-		setter(v);
-	};
-
-	Label* lbl = new Label();
-	lbl->text = label;
-	lbl->alignment = HorizontalAlignment::right;
-	gui->addControl(lbl);
-
 	Panel* row = new Panel();
 	row->drawBackground(false);
 	row->bounds = { 0, 0, 0, 30 };
 
+	Label* lbl = new Label();
+	lbl->text = label;
+	lbl->alignment = HorizontalAlignment::right;
+	row->addChild(lbl);
+
+	Slider* sld = new Slider();
+	sld->min = min;
+	sld->max = max;
+	sld->step = step;
+	sld->value = value;
+	sld->onChange = [=](float v) {
+		setter(v);
+	};
+	row->addChild(sld);
+	
 	RowLayout* rl = new RowLayout(2, 3);
 	rl->expansion[0] = 0.7f;
 	rl->expansion[1] = 1.3f;
-
 	row->setLayout(rl);
-	row->addChild(lbl);
-	row->addChild(sld);
 
-	gui->addControl(row);
 	return row;
 }
 
 template <size_t Size>
 static Control* gui_Vector(
-	GUISystem* gui,
 	const std::string& label,
 	RawValue& value
 ) {
@@ -97,18 +89,17 @@ static Control* gui_Vector(
 	root->drawBackground(false);
 	root->setLayout(new ColumnLayout(0));
 	root->bounds = { 0, 0, 0, 64 };
-	gui->addControl(root);
 
 	Label* lbl = new Label();
 	lbl->text = label;
 	lbl->bounds = { 0, 0, 0, 24 };
-	gui->addControl(lbl);
+	root->addChild(lbl);
 
 	Panel* vec = new Panel();
 	vec->drawBackground(false);
 	vec->setLayout(new RowLayout(Size, 0));
 	vec->bounds = { 0, 0, 0, 34 };
-	gui->addControl(vec);
+	root->addChild(vec);
 
 	for (size_t i = 0; i < std::min(4ull, Size); i++) {
 		Edit* edt = new Edit();
@@ -119,29 +110,24 @@ static Control* gui_Vector(
 			value[i] = std::stof(text);
 			edt->text = std::to_string(value[i]);
 		};
-		gui->addControl(edt);
 		vec->addChild(edt);
 	}
-
-	root->addChild(lbl);
-	root->addChild(vec);
 
 	return root;
 }
 
-static Control* gui_ColorNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_ColorNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 0 };
 	pnl->setLayout(new ColumnLayout());
-	gui->addControl(pnl);
 
 	const std::string labels[] = { "Red", "Geen", "Blue", "Alpha" };
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 	for (size_t i = 0; i < 4; i++) {
 		auto ctrl = gui_ValueSlider(
-			gui, labels[i], nd->param("Color").value[i],
+			labels[i], nd->param("Color").value[i],
 			[=](float v) {
 				nd->setParam("Color", i, v);
 			}
@@ -153,12 +139,11 @@ static Control* gui_ColorNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
-static Control* gui_MixNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_MixNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 90 };
 	pnl->setLayout(new ColumnLayout());
-	gui->addControl(pnl);
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 
@@ -172,37 +157,34 @@ static Control* gui_MixNode(GUISystem* gui, VisualNode* node) {
 	rsel->onSelect = [=](int index) {
 		nd->setParam("Mode", float(index));
 	};
-	gui->addControl(rsel);
+	pnl->addChild(rsel);
 
 	auto ctrl = gui_ValueSlider(
-		gui, "Factor", nd->param("Factor").value[0],
+		"Factor", nd->param("Factor").value[0],
 		[=](float v) {
 			nd->setParam("Factor", v);
 		}
 	);
-
-	pnl->addChild(rsel);
 	pnl->addChild(ctrl);
 
 	return pnl;
 }
 
-static Control* gui_SimpleGradientNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_SimpleGradientNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 60 };
 	pnl->setLayout(new ColumnLayout());
-	gui->addControl(pnl);
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
-	Slider* sld = new Slider();
-	gui->addControl(sld);
 
 	Label* lbl = new Label();
 	lbl->text = "Angle";
 	lbl->bounds = { 0, 0, 0, 18 };
-	gui->addControl(lbl);
+	pnl->addChild(lbl);
+	//gui->addControl(lbl);
 
+	Slider* sld = new Slider();
 	sld->value = nd->param("Angle").value[0];
 	sld->onChange = [=](float v) {
 		nd->setParam("Angle", v);
@@ -210,45 +192,38 @@ static Control* gui_SimpleGradientNode(GUISystem* gui, VisualNode* node) {
 	sld->min = -PI;
 	sld->max = PI;
 	sld->bounds = { 0, 0, 0, 30 };
-
-	pnl->addChild(lbl);
 	pnl->addChild(sld);
 
 	return pnl;
 }
 
-static Control* gui_NoiseNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_NoiseNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 60 };
 	pnl->setLayout(new ColumnLayout());
-	gui->addControl(pnl);
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 
 	auto scale = gui_ValueSlider(
-		gui, "Scale", nd->param("Scale").value[0],
+		"Scale", nd->param("Scale").value[0],
 		[=](float v) {
 			nd->setParam("Scale", v);
 		},
 		1.0f, 99.0f
 	);
 	auto patx = gui_ValueSlider(
-		gui, "Pattern X", nd->param("Pattern X").value[0],
+		"Pattern X", nd->param("Pattern X").value[0],
 		[=](float v) {
 			nd->setParam("Pattern X", v);
 		}
 	);
 	auto paty = gui_ValueSlider(
-		gui, "Pattern Y", nd->param("Pattern Y").value[0],
+		"Pattern Y", nd->param("Pattern Y").value[0],
 		[=](float v) {
 			nd->setParam("Pattern Y", v);
 		}
 	);
-
-	gui->addControl(scale);
-	gui->addControl(patx);
-	gui->addControl(paty);
 
 	pnl->addChild(scale);
 	pnl->addChild(patx);
@@ -257,30 +232,26 @@ static Control* gui_NoiseNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
-static Control* gui_ThresholdNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_ThresholdNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 60 };
 	pnl->setLayout(new ColumnLayout());
-	gui->addControl(pnl);
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 
 	auto thr = gui_ValueSlider(
-		gui, "Threshold", nd->param("Threshold").value[0],
+		"Threshold", nd->param("Threshold").value[0],
 		[=](float v) {
 			nd->setParam("Threshold", v);
 		}
 	);
 	auto feat = gui_ValueSlider(
-		gui, "Feather", nd->param("Feather").value[0],
+		"Feather", nd->param("Feather").value[0],
 		[=](float v) {
 			nd->setParam("Feather", v);
 		}
 	);
-
-	gui->addControl(thr);
-	gui->addControl(feat);
 
 	pnl->addChild(thr);
 	pnl->addChild(feat);
@@ -288,7 +259,7 @@ static Control* gui_ThresholdNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
-static Control* gui_ImageNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_ImageNode(VisualNode* node) {
 	Button* btn = new Button();
 	btn->text = "Load Texture";
 
@@ -316,16 +287,14 @@ static Control* gui_ImageNode(GUISystem* gui, VisualNode* node) {
 			nd->setParam("Image", float(nd->handle->id()));
 		}
 	};
-	gui->addControl(btn);
 	return btn;
 }
 
-static Control* gui_UVNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_UVNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 60 };
 	pnl->setLayout(new ColumnLayout());
-	gui->addControl(pnl);
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 
@@ -339,36 +308,26 @@ static Control* gui_UVNode(GUISystem* gui, VisualNode* node) {
 		nd->setParam("Clamp", float(index));
 	};
 	pnl->addChild(rsel);
-	gui->addControl(rsel);
 
 	auto defAmt = gui_ValueSlider(
-		gui, "Def. Amt.", nd->param("Deform Amount").value[0],
+		"Def. Amt.", nd->param("Deform Amount").value[0],
 		[=](float v) {
 			nd->setParam("Deform Amount", v);
 		}
 	);
 	pnl->addChild(defAmt);
 
-	auto rep = gui_Vector<2ull>(gui, "Repeat", nd->paramValue("Repeat"));
+	auto rep = gui_Vector<2ull>("Repeat", nd->paramValue("Repeat"));
 	pnl->addChild(rep);
 
-	auto spacing = gui_ValueSlider(
-		gui, "Spacing", nd->param("Spacing").value[0],
-		[=](float v) {
-			nd->setParam("Spacing", v);
-		},
-		0.0f, 1.0f, 0.01f
-	);
-	pnl->addChild(spacing);
-
-	auto pos = gui_Vector<2ull>(gui, "Position", nd->paramValue("Position"));
+	auto pos = gui_Vector<2ull>("Position", nd->paramValue("Position"));
 	pnl->addChild(pos);
 
-	auto scl = gui_Vector<2ull>(gui, "Scale", nd->paramValue("Scale"));
+	auto scl = gui_Vector<2ull>("Scale", nd->paramValue("Scale"));
 	pnl->addChild(scl);
 
 	auto rot = gui_ValueSlider(
-		gui, "Rotation", nd->param("Rotation").value[0],
+		"Rotation", nd->param("Rotation").value[0],
 		[=](float v) {
 			nd->setParam("Rotation", v);
 		},
@@ -379,17 +338,16 @@ static Control* gui_UVNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
-static Control* gui_NormalMapNode(GUISystem* gui, VisualNode* node) {
-	Panel* pnl = new Panel();
+static Control* gui_NormalMapNode(VisualNode* node) {
+	Panel* pnl = new Panel();;
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 60 };
 	pnl->setLayout(new ColumnLayout());
-	gui->addControl(pnl);
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 
 	auto ctrl = gui_ValueSlider(
-		gui, "Scale", nd->param("Scale").value[0],
+		"Scale", nd->param("Scale").value[0],
 		[=](float v) {
 			nd->setParam("Scale", v);
 		},
@@ -401,17 +359,16 @@ static Control* gui_NormalMapNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
-static Control* gui_CircleShapeNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_CircleShapeNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 60 };
 	pnl->setLayout(new ColumnLayout());
-	gui->addControl(pnl);
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 
 	auto ctrl = gui_ValueSlider(
-		gui, "Radius", nd->param("Radius").value[0],
+		"Radius", nd->param("Radius").value[0],
 		[=](float v) {
 			nd->setParam("Radius", v);
 		},
@@ -423,12 +380,11 @@ static Control* gui_CircleShapeNode(GUISystem* gui, VisualNode* node) {
 	return pnl;
 }
 
-static Control* gui_BoxShapeNode(GUISystem* gui, VisualNode* node) {
+static Control* gui_BoxShapeNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 0 };
 	pnl->setLayout(new ColumnLayout());
-	gui->addControl(pnl);
 
 	const std::string labelsCorners[] = { "Bot. Right", "Top Right", "Bot. Left", "Top Left" };
 	const std::string labelsBounds[] = { "Width", "Height" };
@@ -437,7 +393,7 @@ static Control* gui_BoxShapeNode(GUISystem* gui, VisualNode* node) {
 
 	for (size_t i = 0; i < 2; i++) {
 		auto ctrl = gui_ValueSlider(
-			gui, labelsBounds[i], nd->param("Bounds").value[i],
+			labelsBounds[i], nd->param("Bounds").value[i],
 			[=](float v) {
 				nd->setParam("Bounds", i, v);
 			},
@@ -449,7 +405,7 @@ static Control* gui_BoxShapeNode(GUISystem* gui, VisualNode* node) {
 
 	for (size_t i = 0; i < 4; i++) {
 		auto ctrl = gui_ValueSlider(
-			gui, labelsCorners[i], nd->param("Border Radius").value[i],
+			labelsCorners[i], nd->param("Border Radius").value[i],
 			[=](float v) {
 				nd->setParam("Border Radius", i, v);
 			},
@@ -480,10 +436,10 @@ static NodeContructor nodeTypes[] = {
 	{ "", "", nullptr, nullptr }
 };
 
-static Control* createTextureNodeEditorGui(GUISystem* gui, VisualNode* ref) {
+static Control* createTextureNodeEditorGui(VisualNode* ref) {
 	for (NodeContructor ctor : nodeTypes) {
 		if (ctor.code == ref->code()) {
-			return ctor.onGui != nullptr ? ctor.onGui(gui, ref) : nullptr;
+			return ctor.onGui != nullptr ? ctor.onGui(ref) : nullptr;
 		}
 	}
 	return nullptr;

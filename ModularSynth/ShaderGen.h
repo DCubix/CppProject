@@ -14,6 +14,8 @@ const std::string typeStr[] = {
 const std::string shaderTemplate = R"(#version 460
 layout (local_size_x=16, local_size_y=16) in;
 
+uniform vec2 bOutputSize;
+
 <uniforms>
 
 float fmod(float x, float y) {

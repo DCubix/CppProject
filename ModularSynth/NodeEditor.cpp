@@ -397,16 +397,20 @@ void NodeEditor::onMouseLeave() {
 	m_state = NodeEditorState::idling;
 }
 
-void NodeEditor::onKeyPress(int key) {
+bool NodeEditor::onKeyPress(int key) {
 	if (key == VK_SHIFT) {
 		m_shiftPressed = true;
+		return true;
 	}
+	return false;
 }
 
-void NodeEditor::onKeyRelease(int key) {
+bool NodeEditor::onKeyRelease(int key) {
 	if (key == VK_SHIFT) {
 		m_shiftPressed = false;
+		return true;
 	}
+	return false;
 }
 
 int NodeEditor::getClosestInput(Point p, VisualNode*& node, int& inputRectIndex)

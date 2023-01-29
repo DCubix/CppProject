@@ -1,6 +1,7 @@
 #include "Slider.h"
 
 #include <format>
+#include <iostream>
 
 constexpr float sliderHeight = 20.0f;
 constexpr float popupHeignt = 18.0f;
@@ -53,7 +54,7 @@ void Slider::onPostDraw(NVGcontext* ctx, float deltaTime) {
 
 	float nvalue = (value - min) / (max - min);
 	float popupX = (sliderRect.width - 2) * nvalue + 1;
-	float popupY = sliderRect.height / 2;
+	float popupY = 0;
 
 	std::string valueText = std::vformat(valueFormat, std::make_format_args(value));
 
@@ -76,10 +77,12 @@ void Slider::onPostDraw(NVGcontext* ctx, float deltaTime) {
 	float textX = popupX - textW / 2;
 	float textY = popupY + popupH / 2;
 
+	//std::cout << popupX << ", " << popupY << "\n";
+
 	nvgSave(ctx);
 
 	// animate offset
-	nvgTranslate(ctx, 0.0f, LERP(10.0f, 0.0f, animValue));
+	nvgTranslate(ctx, 0.0f, std::lerp(10.0f, 0.0f, animValue));
 
 	nvgBeginPath(ctx);
 	nvgRoundedRect(ctx, popupX - popupW / 2, popupY, popupW, popupH, 6.0f);
@@ -101,13 +104,13 @@ void Slider::onMouseDown(int button, int x, int y) {
 		calculateValue(x);
 		m_dragging = true;
 
-		m_anim.forward(1.0f, 0.0f, 0.3f);
+		m_anim.target(1.0f, 0.3f);
 	}
 }
 
 void Slider::onMouseUp(int button, int x, int y) {
 	m_dragging = false;
-	m_anim.reverse(0.3f);
+	m_anim.target(0.0f, 0.3f);
 }
 
 void Slider::onMouseMove(int x, int y, int dx, int dy) {
@@ -119,7 +122,7 @@ void Slider::onMouseMove(int x, int y, int dx, int dy) {
 void Slider::onMouseLeave() {
 	if (m_dragging) {
 		m_dragging = false;
-		m_anim.reverse(0.3f);
+		m_anim.target(0.0f, 0.3f);
 	}
 }
 
@@ -133,6 +136,7 @@ void Slider::calculateValue(int mx) {
 
 	if (newValue != value) {
 		value = newValue;
+		value = std::clamp(value, min, max);
 		if (onChange) onChange(value);
 	}
 }

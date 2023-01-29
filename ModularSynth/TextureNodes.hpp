@@ -288,45 +288,51 @@ public:
 	outV = mix(m, 2.0 - m, step(1.0, m));
 }
 
-vec2 op_rep(in vec2 p, float c, vec2 lmax) {
-    return p - c * clamp(round(p / c), vec2(0.0), lmax);
+vec2 op_rep(in vec2 p, vec2 count) {
+    vec2 nuv = fract(p * count);
+    
+    if (count.y > count.x)
+        nuv.x *= max(count.x, count.y) / min(count.x, count.y);
+    else
+        nuv.y *= max(count.x, count.y) / min(count.x, count.y);
+    return nuv;
 }
 
 void out_uv(
 	vec2 uvIn, float clampMode, float deformAmt, vec2 deform,
 
-	vec2 repeat, float spacing,
+	vec2 repeatCount,
 
 	vec2 pos, vec2 scale, float rot,
 
 	out vec2 duv
 ) {
-	vec2 sz = imageSize(bOutput);
+	vec2 sz = bOutputSize;
 	float s = sin(rot);
 	float c = cos(rot);
 
 	vec2 uv = uvIn;
-	uv.x -= 0.5;
+
+	uv += ((deform * 2.0 - 1.0) * deformAmt);
+
 	uv.x *= sz.x / sz.y;
+	uv -= vec2(0.5);
 
 	mat2 xform =
 		mat2(scale.x, 0.0, 0.0, scale.y) *
 		mat2(c, -s, s, c);	
 	uv *= xform;
-	uv += pos;
+	uv += pos + vec2(0.5);
 
-	uv = op_rep(uv, spacing, repeat);
-
-	uv += ((deform * 2.0 - 1.0) * deformAmt);
-
-	duv = uv;
 	if (clampMode == 0.0) { // clamp to edge
-		duv = clamp(duv, 0.0, 1.0);
+		uv = clamp(uv, 0.0, 1.0);
 	} else if (clampMode == 1.0) { // repeat
-		duv = mod(duv, 1.0);
+		uv = mod(uv, 1.0);
 	} else if (clampMode == 2.0) { // mirror
-		mirrored(duv, duv);
+		mirrored(uv, uv);
 	}
+
+	duv = op_rep(uv, repeatCount);
 }
 )";
 	}
@@ -339,8 +345,7 @@ void out_uv(
 			{ "clampMode", { "Clamp", SpecialType::none } },
 			{ "deformAmt", { "Deform Amount", SpecialType::none } },
 			{ "deform", { "Deform", SpecialType::none } },
-			{ "repeat", { "Repeat", SpecialType::none } },
-			{ "spacing", { "Spacing", SpecialType::none } },
+			{ "repeatCount", { "Repeat", SpecialType::none } },
 			{ "pos", { "Position", SpecialType::none } },
 			{ "scale", { "Scale", SpecialType::none } },
 			{ "rot", { "Rotation", SpecialType::none } }
@@ -351,11 +356,11 @@ void out_uv(
 		addInput("Deform", ValueType::vec2);
 
 		addParam("Repeat", ValueType::vec2);
-		addParam("Spacing", ValueType::scalar);
 
 		addParam("Position", ValueType::vec2);
 		addParam("Scale", ValueType::vec2);
 		addParam("Rotation", ValueType::scalar);
+		setParam("Scale", 1.0f, 1.0f);
 
 		addParam("Clamp", ValueType::scalar);
 
@@ -398,7 +403,7 @@ public:
 
 	std::string library() {
 		return R"(void gen_normal_map(in vec2 uv, float scale, out vec3 res) {
-	vec2 step = 1.0 / vec2(imageSize(bOutput));
+	vec2 step = 1.0 / bOutputSize;
 
 	float height = rgb_to_float($TREE(uv).rgb);
 	float s1 = rgb_to_float($TREE(uv + vec2(step.x, 0.0)).rgb);
@@ -433,7 +438,7 @@ public:
 	std::string library() {
 		return R"(
 void emit_out_$NODE(in vec2 uv, vec4 color) {
-	imageStore(bOutput$NODE, ivec2(uv * vec2(imageSize(bOutput$NODE))), vec4(uv, 1.0, 1.0));
+	imageStore(bOutput$NODE, ivec2(uv * vec2(imageSize(bOutput$NODE))), color);
 })";
 	}
 
@@ -450,7 +455,7 @@ void emit_out_$NODE(in vec2 uv, vec4 color) {
 		addInput("Color", ValueType::vec4);
 	}
 
-	void beginRender(uint32_t width, uint32_t height, size_t binding = 0) {
+	void render(uint32_t width, uint32_t height, size_t binding = 0) {
 		if (!texture) {
 			texture = std::unique_ptr<Texture>(new Texture({ width, height }, GL_RGBA32F));
 		}
@@ -461,7 +466,7 @@ void emit_out_$NODE(in vec2 uv, vec4 color) {
 			}
 		}
 
-		glBindImageTexture(binding, texture->id(), 0, false, 0, GL_READ_WRITE, GL_RGBA32F);
+		glBindImageTexture(binding, texture->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);
 	}
 
 	std::unique_ptr<Texture> texture;

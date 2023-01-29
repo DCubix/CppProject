@@ -16,6 +16,7 @@ public:
 class Panel : public Control {
 public:
 	void onDraw(NVGcontext* ctx, float deltaTime) override;
+	void onPostDraw(NVGcontext* ctx, float deltaTime) override;
 
 	void onMouseDown(int button, int x, int y) override;
 	void onMouseUp(int button, int x, int y) override;
@@ -23,13 +24,6 @@ public:
 	void onMouseLeave() override;
 
 	void setLayout(Layout* layout);
-	void addChild(Control* control);
-	void removeChild(Control* control);
-
-	std::vector<Control*> onGetExtraControls() override { return m_children; }
-	void clearExtraControls() override;
-
-	std::vector<Control*> children() { return m_children; }
 
 	void drawBackground(bool visible) { m_drawBackground = visible; }
 	void draggable(bool draggable) { m_draggable = draggable; }
@@ -39,7 +33,8 @@ public:
 	std::function<void(NVGcontext*)> onCustomPaint;
 
 private:
-	std::vector<Control*> m_children;
+	std::vector<std::pair<ControlID, size_t>> m_orders;
+
 	std::unique_ptr<Layout> m_layout;
 
 	bool m_drawBackground{ true }, m_draggable{ false };

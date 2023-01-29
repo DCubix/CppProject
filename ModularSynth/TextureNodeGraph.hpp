@@ -26,7 +26,7 @@ public:
 		
 		std::string lib = "";
 
-		for (size_t i = 0; i < m_nodePath.size(); i++) {
+		for (size_t i = m_nodePath.size(); i-- > 0;) {
 			auto node = dynamic_cast<GraphicsNode*>(get(m_nodePath[i]));
 
 			// replace $ vars
@@ -51,9 +51,8 @@ public:
 			// Output nodes
 			if (dynamic_cast<OutputNode*>(node)) {
 				gen.beginCodeBlock();
-				gen.append(std::format("layout (rgba32f, binding={}) uniform image2D bOutput{};\n", m_imgId, node->id()));
+				gen.append(std::format("layout (rgba32f, binding={}) uniform image2D bOutput{};\n", m_imgId++, node->id()));
 				gen.endCodeBlock(ShaderGen::Target::uniforms);
-				m_imgId++;
 			}
 
 			// load libraries
@@ -243,6 +242,88 @@ public:
 		render();
 	}
 
+	void render(uint32_t width = 1024, uint32_t height = 1024) {
+		if (!generatedShader) return;
+
+		glUseProgram(generatedShader->id());
+		generatedShader->uniform<2>("bOutputSize", { float(width), float(height) });
+
+		// render outputs
+		size_t binding = 0;
+		for (const auto& nodeId : m_nodePath) {
+			auto node = get(nodeId);
+			OutputNode* out = dynamic_cast<OutputNode*>(node);
+			if (!out) continue;
+
+			out->render(width, height, binding++);
+		}
+
+		setUniforms(binding);
+		
+		glDispatchCompute(width / 16, height / 16, 1);
+		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+	}
+
+	void save(olc::utils::datafile& out) {
+		for (auto& node : m_nodes) {
+			auto nodePtr = static_cast<GraphicsNode*>(node.get());
+			std::string nodeName = std::format("node_{}", node->id());
+
+			nodePtr->saveTo(out["nodes"][nodeName]);
+		}
+
+		// connections
+		size_t i = 0;
+		for (auto& conn : m_connections) {
+			olc::utils::datafile& linkData = out["connections"][std::format("conn_{}", i)];
+			linkData["source"].SetInt(conn.source->id());
+			linkData["destination"].SetInt(conn.destination->id());
+			linkData["sourceOutput"].SetInt(conn.sourceOutput);
+			linkData["destinationInput"].SetInt(conn.destinationInput);
+			i++;
+		}
+	}
+
+	std::unique_ptr<Shader> generatedShader;
+
+private:
+	void setUniform(const std::string& name, const NodeValue& nv, size_t index) {
+		auto shader = generatedShader.get();
+		switch (nv.type) {
+			case ValueType::scalar: shader->uniform<1>(name, { nv.value[0] }); break;
+			case ValueType::vec2: shader->uniform<2>(name, { nv.value[0], nv.value[1] }); break;
+			case ValueType::vec3: shader->uniform<3>(name, { nv.value[0], nv.value[1], nv.value[2] }); break;
+			case ValueType::vec4: shader->uniform<4>(name, nv.value); break;
+			case ValueType::image: {
+				glBindImageTexture(index, GLuint(nv.value[0]), 0, false, 0, GL_READ_ONLY, GL_RGBA32F);
+				shader->uniformInt<1>(name, { int(index) });
+			} break;
+		}
+	}
+
+	void setNodeUniforms(GraphicsNode* node, size_t& binding) {
+		for (auto& [paramName, nv] : node->params()) {
+			auto uniName = std::format("param_{}_{}", node->id(), toCamelCase(paramName));
+			
+			// UNIFORM
+			setUniform(uniName, nv, binding);
+
+			// BODY
+			if (nv.type == ValueType::image) {
+				binding++;
+			}
+			
+		}
+	}
+
+	void setUniforms(size_t startBinding) {
+		size_t binding = startBinding;
+		for (size_t i = m_nodePath.size(); i-- > 0;) {
+			auto node = static_cast<GraphicsNode*>(get(m_nodePath[i]));
+			setNodeUniforms(node, binding);
+		}
+	}
+
 	bool checkParams(
 		ShaderGen& gen,
 		GraphicsNode* node,
@@ -261,7 +342,7 @@ public:
 				SpecialType uvsSpecialType = SpecialType::none;
 				ValueType uvsType = ValueType::none;
 
-				for (auto [ fnParam, ndParam ] : nodeParams) {
+				for (auto [fnParam, ndParam] : nodeParams) {
 					if (ndParam.second == SpecialType::textureCoords) {
 						uvsName = ndParam.first;
 						uvsSpecialType = ndParam.second;
@@ -336,91 +417,6 @@ public:
 				}
 			}
 			return true;
-		}
-	}
-
-	void render(uint32_t width = 512, uint32_t height = 512) {
-		if (!generatedShader) return;
-
-		glUseProgram(generatedShader->id());
-
-		// render outputs
-		size_t binding = 0;
-		for (const auto& nodeId : m_nodePath) {
-			auto node = get(nodeId);
-			OutputNode* out = dynamic_cast<OutputNode*>(node);
-			if (!out) continue;
-
-			out->beginRender(width, height, binding);
-			generatedShader->uniformInt<1>(std::format("bOutput{}", nodeId), { int(binding) });
-			binding++;
-		}
-
-		setUniforms(binding);
-		
-		glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-		glDispatchCompute(width / 16, height / 16, 1);
-
-		glUseProgram(0);
-	}
-
-	void save(olc::utils::datafile& out) {
-		for (auto& node : m_nodes) {
-			auto nodePtr = static_cast<GraphicsNode*>(node.get());
-			std::string nodeName = std::format("node_{}", node->id());
-
-			nodePtr->saveTo(out["nodes"][nodeName]);
-		}
-
-		// connections
-		size_t i = 0;
-		for (auto& conn : m_connections) {
-			olc::utils::datafile& linkData = out["connections"][std::format("conn_{}", i)];
-			linkData["source"].SetInt(conn.source->id());
-			linkData["destination"].SetInt(conn.destination->id());
-			linkData["sourceOutput"].SetInt(conn.sourceOutput);
-			linkData["destinationInput"].SetInt(conn.destinationInput);
-			i++;
-		}
-	}
-
-	std::unique_ptr<Shader> generatedShader;
-
-private:
-	void setUniform(const std::string& name, const NodeValue& nv, size_t index) {
-		auto shader = generatedShader.get();
-		switch (nv.type) {
-			case ValueType::scalar: shader->uniform<1>(name, { nv.value[0] }); break;
-			case ValueType::vec2: shader->uniform<2>(name, { nv.value[0], nv.value[1] }); break;
-			case ValueType::vec3: shader->uniform<3>(name, { nv.value[0], nv.value[1], nv.value[2] }); break;
-			case ValueType::vec4: shader->uniform<4>(name, nv.value); break;
-			case ValueType::image: {
-				glBindImageTexture(index, GLuint(nv.value[0]), 0, false, 0, GL_READ_ONLY, GL_RGBA32F);
-				shader->uniformInt<1>(name, { int(index) });
-			} break;
-		}
-	}
-
-	void setNodeUniforms(GraphicsNode* node, size_t& binding) {
-		for (auto& [paramName, nv] : node->params()) {
-			auto uniName = std::format("param_{}_{}", node->id(), toCamelCase(paramName));
-			
-			// UNIFORM
-			setUniform(uniName, nv, binding);
-
-			// BODY
-			if (nv.type == ValueType::image) {
-				binding++;
-			}
-			
-		}
-	}
-
-	void setUniforms(size_t startBinding) {
-		size_t binding = startBinding;
-		for (size_t i = 0; i < m_nodePath.size(); i++) {
-			auto node = static_cast<GraphicsNode*>(get(m_nodePath[i]));
-			setNodeUniforms(node, binding);
 		}
 	}
 

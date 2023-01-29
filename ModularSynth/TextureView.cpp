@@ -8,7 +8,7 @@ constexpr int checkerboardSize = 16;
 void TextureView::onDraw(NVGcontext* ctx, float deltaTime) {
 	Rect b = bounds;
 
-	if (m_texture != m_textureOld) {
+	/*if (m_texture != m_textureOld) {
 		if (m_image != -1) {
 			nvgDeleteImage(ctx, m_image);
 			m_image = -1;
@@ -29,6 +29,19 @@ void TextureView::onDraw(NVGcontext* ctx, float deltaTime) {
 				0
 			);
 		}
+	}*/
+	if (m_texture) {
+		m_image = nvglCreateImageFromHandleGL3(
+			ctx,
+			m_texture->id(),
+			m_texture->size()[0],
+			m_texture->size()[1],
+			0
+		);
+	}
+	else if (!m_texture && m_image != -1) {
+		nvgDeleteImage(ctx, m_image);
+		m_image = -1;
 	}
 	
 	nvgIntersectScissor(ctx, 0, 0, b.width, b.height);
