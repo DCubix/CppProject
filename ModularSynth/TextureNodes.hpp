@@ -3,6 +3,9 @@
 #include "GraphicsNode.h"
 #include "Texture.h"
 
+#include "escapi.h"
+#include <Windows.h>
+
 class ColorNode : public GraphicsNode {
 public:
 	std::string library() {
@@ -241,8 +244,6 @@ public:
 
 };
 
-#include <fstream>
-
 class ImageNode : public GraphicsNode {
 public:
 	std::string library() {
@@ -432,7 +433,6 @@ public:
 	}
 };
 
-#include "Window.h"
 class OutputNode : public GraphicsNode {
 public:
 	std::string library() {
@@ -455,7 +455,7 @@ void emit_out_$NODE(in vec2 uv, vec4 color) {
 		addInput("Color", ValueType::vec4);
 	}
 
-	void render(uint32_t width, uint32_t height, size_t binding = 0) {
+	bool render(uint32_t width, uint32_t height, size_t binding = 0) override {
 		if (!texture) {
 			texture = std::unique_ptr<Texture>(new Texture({ width, height }, GL_RGBA32F));
 		}
@@ -467,6 +467,7 @@ void emit_out_$NODE(in vec2 uv, vec4 color) {
 		}
 
 		glBindImageTexture(binding, texture->id(), 0, false, 0, GL_WRITE_ONLY, GL_RGBA32F);
+		return true;
 	}
 
 	std::unique_ptr<Texture> texture;
@@ -533,4 +534,78 @@ void gen_shape_box(in vec2 uv, vec2 b, in vec4 r, out float res) {
 		setParam("Bounds", { 0.5f, 0.5f });
 		setParam("Border Radius", { 0.0f, 0.0f, 0.0f, 0.0f });
 	}
+};
+
+class WebCamNode : public GraphicsNode {
+public:
+	std::string library() {
+		return R"(void gen_sample_webcam(in vec4 img, out vec4 outColor) {
+	outColor = img;
+})";
+	}
+
+	std::string functionName() { return "gen_sample_webcam"; }
+
+	GraphicsNodeParams parameters() {
+		return {
+			{ "uv", { "UV", SpecialType::textureCoords } },
+			{ "img", { "Image", SpecialType::none } }
+		};
+	}
+
+	void onCreate() {
+		addOutput("Output", ValueType::vec4);
+		addParam("Image", ValueType::image);
+		addInput("UV", ValueType::vec2);
+	}
+
+	bool render(uint32_t width, uint32_t height, size_t binding = 0) override {
+		if (!texture) {
+			CoInitialize(NULL);
+
+			int devices = countCaptureDevices();
+			if (devices == 0) return false;
+
+			captureParams.mWidth = 320;
+			captureParams.mHeight = 240;
+			captureParams.mTargetBuf = new int[captureParams.mWidth * captureParams.mHeight];
+
+			for (int i = 0; i < devices; i++) {
+				char buf[128];
+				getCaptureDeviceName(i, buf, 128);
+				std::cout << buf << "\n";
+			}
+
+			if (initCapture(1, &captureParams) == 0) {
+				return false;
+			}
+
+			doCapture(1);
+			while (isCaptureDone(1) == 0);
+
+			texture = std::unique_ptr<Texture>(new Texture({ uint32_t(captureParams.mWidth), uint32_t(captureParams.mHeight) }, GL_RGBA32F));
+
+			float* floatData = new float[captureParams.mWidth * captureParams.mHeight * 4];
+			for (size_t i = 0; i < captureParams.mWidth * captureParams.mHeight; i++) {
+				int pixel = captureParams.mTargetBuf[i];
+				int r = (pixel & 0x00FF0000) >> 16;
+				int g = (pixel & 0x0000FF00) >> 8;
+				int b = (pixel & 0x000000FF);
+				floatData[i * 4 + 0] = float(r) / 255.0f;
+				floatData[i * 4 + 1] = float(g) / 255.0f;
+				floatData[i * 4 + 2] = float(b) / 255.0f;
+				floatData[i * 4 + 3] = 1.0f;
+			}
+
+			texture->loadFromMemory(floatData, GL_RGBA, GL_FLOAT);
+
+			setParam("Image", float(texture->id()));
+
+			deinitCapture(1);
+		}
+		return true;
+	}
+
+	struct SimpleCapParams captureParams;
+	std::unique_ptr<Texture> texture;
 };

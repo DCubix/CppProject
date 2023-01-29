@@ -13,8 +13,6 @@
 #include "Edit.h"
 #include "TextureView.h"
 
-#include "Animator.h"
-
 #include "GraphicsNode.h"
 #include "TextureNodeRegistry.h"
 #include "TextureNodeGraph.hpp"

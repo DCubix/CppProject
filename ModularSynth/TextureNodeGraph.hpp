@@ -252,10 +252,11 @@ public:
 		size_t binding = 0;
 		for (const auto& nodeId : m_nodePath) {
 			auto node = get(nodeId);
-			OutputNode* out = dynamic_cast<OutputNode*>(node);
-			if (!out) continue;
+			GraphicsNode* gnode = dynamic_cast<GraphicsNode*>(node);
 
-			out->render(width, height, binding++);
+			if (gnode->render(width, height, binding)) {
+				binding++;
+			}
 		}
 
 		setUniforms(binding);
