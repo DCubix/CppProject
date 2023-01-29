@@ -74,9 +74,9 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		child->onDraw(ctx, deltaTime);
 		nvgRestore(ctx);
 
-		nvgFillColor(ctx, nvgRGB(0, 255, 255));
+		/*nvgFillColor(ctx, nvgRGB(0, 255, 255));
 		nvgTextAlign(ctx, NVG_ALIGN_LEFT | NVG_ALIGN_TOP);
-		nvgText(ctx, cbounds.x, cbounds.y, std::to_string(child->id()).c_str(), nullptr);
+		nvgText(ctx, cbounds.x, cbounds.y, std::to_string(child->id()).c_str(), nullptr);*/
 
 		index++;
 	}
