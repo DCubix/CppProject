@@ -24,7 +24,7 @@ bool Control::onEvent(WindowEvent ev) {
 		auto&& child = m_children[childId];
 		consumed = child->onEvent(ev);
 		if (consumed) {
-			std::cout << child->id() << " consumed the event.\n";
+			//std::cout << child->id() << " consumed the event.\n";
 			break;
 		}
 	}

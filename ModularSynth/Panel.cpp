@@ -2,6 +2,8 @@
 
 #include "GUISystem.h"
 
+#include <iostream>
+
 constexpr float titleHeight = 38.0f;
 
 void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
@@ -79,14 +81,6 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		index++;
 	}
 	if (m_layout) m_layout->endLayout();
-
-	/*nvgResetScissor(ctx);
-
-
-	nvgBeginPath(ctx);
-	nvgRect(ctx, 0, 0, b.width, b.height);
-	nvgStrokeColor(ctx, nvgRGB(0, 255, 255));
-	nvgStroke(ctx);*/
 }
 
 void Panel::onPostDraw(NVGcontext* ctx, float deltaTime) {
@@ -96,7 +90,7 @@ void Panel::onPostDraw(NVGcontext* ctx, float deltaTime) {
 		nvgSave(ctx);
 
 		// make local coordinates
-		Rect bounds = child->screenSpaceBounds();
+		Rect bounds = child->bounds;
 		nvgTranslate(ctx, bounds.x, bounds.y);
 
 		child->onPostDraw(ctx, deltaTime);

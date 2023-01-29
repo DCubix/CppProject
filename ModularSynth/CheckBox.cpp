@@ -19,8 +19,8 @@ void CheckBox::onDraw(NVGcontext* ctx, float deltaTime) {
 	float clickValue = m_clickAnimator.value(Curves::easeInOutQuad, deltaTime);
 	float checkValue = m_checkAnimator.value(Curves::easeInOutQuad, deltaTime);
 
-	float clickAlphaValue = LERP(0.6f, 1.0f, clickValue);
-	float clickBgValue = LERP(0.0f, 1.0f, clickValue);
+	float clickAlphaValue = std::lerp(0.6f, 1.0f, clickValue);
+	float clickBgValue = std::lerp(0.0f, 1.0f, clickValue);
 	float clickFgValue = 1.0f - clickBgValue;
 
 	Rect b = bounds;
@@ -66,29 +66,29 @@ void CheckBox::onDraw(NVGcontext* ctx, float deltaTime) {
 }
 
 void CheckBox::onMouseUp(int button, int x, int y) {
-	m_clickAnimator.reverse(dur);
+	m_clickAnimator.target(0.0f, dur);
 	if (button == 1) {
 		if (!m_selected) {
-			m_checkAnimator.forward(1.0f, 0.0f, 0.25f);
+			m_checkAnimator.target(1.0f, 0.25f);
 		}
 		else {
-			m_checkAnimator.reverse(0.25f);
+			m_checkAnimator.target(0.0f, 0.25f);
 		}
 		m_selected = !m_selected;
 	}
 }
 
 void CheckBox::onMouseDown(int button, int x, int y) {
-	m_clickAnimator.forward(1.0f, 0.0f, 0.25f);
-	m_hoverAnimator.reverse(dur);
+	m_clickAnimator.target(1.0f, 0.25f);
+	m_hoverAnimator.target(0.0f, dur);
 }
 
 void CheckBox::onMouseEnter() {
-	m_hoverAnimator.forward(1.0f, 0.0f, dur);
-	m_clickAnimator.reset();
+	m_hoverAnimator.target(1.0f, dur);
+	m_clickAnimator.target(0.0f, 0.01f);
 }
 
 void CheckBox::onMouseLeave() {
-	m_hoverAnimator.reverse(dur);
-	m_clickAnimator.reset();
+	m_hoverAnimator.target(0.0f, dur);
+	m_clickAnimator.target(0.0f, 0.01f);
 }

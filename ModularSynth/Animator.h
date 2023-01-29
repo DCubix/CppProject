@@ -1,68 +1,55 @@
 #pragma once
 
 #include <functional>
+#include <algorithm>
 
 #define PI 3.141592654f
-#define LERP(a, b, t) ((1.0f - (t)) * (a) + (b) * (t))
 
 using Curve = std::function<float(float)>;
 
 enum AnimatorState {
 	idling = 0,
-	forwarding,
-	reversing,
+	playing,
 	finished
 };
 
-template <typename T>
+template <typename T = float>
 class Animator {
 public:
 
 	Animator() = default;
 
 	T value(const Curve& curve, float deltaTime) {
-		if (m_state == AnimatorState::reversing) {
-			if (m_time <= 0.0f) {
-				m_state = AnimatorState::finished;
-				m_time = 0.0f;
-				return m_from;
-			}
-			m_time -= deltaTime;
-		}
-		else if (m_state == AnimatorState::forwarding) {
-			if (m_time >= m_duration) {
-				m_state = AnimatorState::finished;
-				m_time = m_duration;
-				return m_to;
-			}
-			m_time += deltaTime;
+		switch (m_state) {
+			case AnimatorState::playing: {
+				float t = m_time / m_duration;
+				if (curve) {
+					t = curve(t);
+				}
+				m_value = std::lerp(m_previousTarget, m_target, t);
+
+				if (m_time < m_duration) {
+					m_time += deltaTime;
+				}
+				else {
+					m_value = m_target;
+					m_time = m_duration;
+					m_state = AnimatorState::finished;
+				}
+			} break;
+			default: break;
 		}
 
-		float t = m_time / m_duration;
-		if (curve) {
-			t = curve(t);
-		}
-		return LERP(m_from, m_to, t);
+		return m_value;
 	}
 
-	void forward(T to, T from = T(), float duration = 0.5f) {
-		reset();
-
-		m_state = AnimatorState::forwarding;
-		m_from = from;
-		m_to = to;
-		m_duration = duration;
-	}
-
-	void reverse(float duration = 0.5f) {
-		m_state = AnimatorState::reversing;
-		m_duration = duration;
-		m_time = duration;
-	}
-
-	void reset() {
+	void target(T value, float duration = 0.5f) {
+		m_previousTarget = m_value;
+		m_value = m_previousTarget;
+		m_target = value;
 		m_time = 0.0f;
-		m_state = AnimatorState::idling;
+		m_duration = duration;
+		m_state = AnimatorState::playing;
 	}
 
 	const AnimatorState& state() const { return m_state; }
@@ -70,7 +57,7 @@ public:
 private:
 	float m_time{ 0.0f }, m_duration{ 0.5f }; // seconds
 
-	T m_from{}, m_to{};
+	T m_value{ 0 }, m_target{ 0 }, m_previousTarget{ 0 };
 	AnimatorState m_state{ AnimatorState::idling };
 };
 

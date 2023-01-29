@@ -18,10 +18,10 @@ public:
 	
 	int selected() const { return m_selectedValue; }
 	void select(int value) {
-		m_clickAnimators[m_selectedValue].reverse(dur);
+		m_clickAnimators[m_selectedValue].target(0.0f, dur);
 		m_selectedValue = value;
-		m_clickAnimators[m_selectedValue].forward(1.0f, 0.0f, dur);
-		m_hoverAnimators[m_selectedValue].reset();
+		m_clickAnimators[m_selectedValue].target(1.0f, dur);
+		m_hoverAnimators[m_selectedValue].target(0.0f, 0.01f);
 	}
 
 	void addOption(int value, const std::string& description);

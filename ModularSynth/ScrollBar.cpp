@@ -277,8 +277,7 @@ void ScrollBar::onMouseDown(int button, int x, int y) {
 			break;
 		}
 
-
-		m_anim.forward(1.0f, 0.0f, 0.3f);
+		m_anim.target(1.0f, 0.3f);
 	}
 }
 
@@ -288,7 +287,7 @@ void ScrollBar::onMouseUp(int button, int x, int y) {
 	m_decreasing = false;
 	m_mousePos = { x, y };
 
-	m_anim.reverse(0.3f);
+	m_anim.target(0.0f, 0.3f);
 }
 
 void ScrollBar::onMouseMove(int x, int y, int dx, int dy) {
