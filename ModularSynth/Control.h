@@ -16,14 +16,57 @@ enum class HorizontalAlignment {
 	right
 };
 
-struct Point { int x, y; };
+struct Point {
+	float x, y;
+
+	inline Point operator +(Point b) {
+		return {
+			x + b.x,
+			y + b.y
+		};
+	}
+
+	inline Point operator -(Point b) {
+		return {
+			x - b.x,
+			y - b.y
+		};
+	}
+
+	inline Point operator *(float b) {
+		return {
+			x * b,
+			y * b
+		};
+	}
+
+	inline int wedge(Point b) {
+		return x * b.y - y * b.x;
+	}
+
+	inline int dot(Point b) {
+		return x * b.x + y * b.y;
+	}
+
+	inline Point lerp(Point b, float t) {
+		return {
+			std::lerp(x, b.x, t),
+			std::lerp(y, b.y, t)
+		};
+	}
+
+	inline Point abs() {
+		return { ::abs(x), ::abs(y) };
+	}
+
+};
 
 struct Rect {
-	int x{ 0 }, y{ 0 }, width{ 100 }, height{ 100 };
+	float x{ 0 }, y{ 0 }, width{ 100 }, height{ 100 };
 
-	int distanceToPointSquared(Point p);
+	float distanceToPointSquared(Point p);
 	bool hasPoint(Point point);
-	Rect& inflate(int amount = 1);
+	Rect& inflate(float amount = 1);
 };
 
 struct SlicedRect {

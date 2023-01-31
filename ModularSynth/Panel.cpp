@@ -93,7 +93,7 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		if (m_layout) {
 			m_layout->performLayout(
 				child.get(),
-				{ b.width, (b.height - int(m_drawBackground ? titleHeight : 0)) },
+				{ int(b.width), int(b.height - (m_drawBackground ? titleHeight : 0)) },
 				index
 			);
 		}

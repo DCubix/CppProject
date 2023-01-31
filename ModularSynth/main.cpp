@@ -12,8 +12,7 @@
 #include "NodeEditor.h"
 #include "Edit.h"
 #include "TextureView.h"
-
-#include "Animator.h"
+#include "ColorWheel.h"
 
 #include "GraphicsNode.h"
 #include "TextureNodeRegistry.h"
@@ -137,7 +136,7 @@ public:
 		// preview
 		Panel* pnlPreview = new Panel();
 		pnlPreview->title = "Preview";
-		pnlPreview->bounds = { int(app.window().size().first) - 268, int(app.window().size().second) - 268, 256, 256 };
+		pnlPreview->bounds = { float(app.window().size().first) - 268, float(app.window().size().second) - 268, 256, 256};
 		pnlPreview->setLayout(new RowLayout(1));
 		gui->root()->addChild(pnlPreview);
 
@@ -147,6 +146,12 @@ public:
 		//gui->addControl(previewControl);
 		pnlPreview->addChild(previewControl);
 		//
+
+
+		ColorWheel* cw = gui->create<ColorWheel>();
+		cw->bounds = { 250, 50, 200, 200 };
+		cw->setOrder(9999);
+
 
 		/*int wgCount[3], wgSize[3];
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &wgCount[0]);

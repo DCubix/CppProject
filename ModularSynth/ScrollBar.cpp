@@ -57,8 +57,8 @@ void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
 	Rect sliderRect = {};
 
 	switch(orientation) {
-		case SBOrientation::horizontal: sliderRect = { 0, b.height / 2 - int(size / 2), b.width, int(size) }; break;
-		case SBOrientation::vertical: sliderRect = { b.width / 2 - int(size / 2), 0, int(size), b.height }; break;
+		case SBOrientation::horizontal: sliderRect = { 0, b.height / 2 - int(size / 2), b.width, (size) }; break;
+		case SBOrientation::vertical: sliderRect = { b.width / 2 - (size / 2), 0, (size), b.height }; break;
 	}
 
 	const float radius = (size / 2) - 2;
@@ -222,7 +222,7 @@ void ScrollBar::onPostDraw(NVGcontext* ctx, float deltaTime) {
 
 void ScrollBar::onMouseDown(int button, int x, int y) {
 	m_focusRequested = true;
-	m_mousePos = { x, y };
+	m_mousePos = { float(x), float(y) };
 	if (button == 1) {
 
 		auto handle = handleRect();
@@ -285,14 +285,14 @@ void ScrollBar::onMouseUp(int button, int x, int y) {
 	m_dragging = false;
 	m_increasing = false;
 	m_decreasing = false;
-	m_mousePos = { x, y };
+	m_mousePos = { float(x), float(y) };
 
 	m_anim.target(0.0f, 0.3f);
 }
 
 void ScrollBar::onMouseMove(int x, int y, int dx, int dy) {
 
-	m_mousePos = { x, y };
+	m_mousePos = { float(x), float(y) };
 
 }
 

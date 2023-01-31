@@ -19,6 +19,14 @@ bool Control::onEvent(WindowEvent ev) {
 		orders.push_back({ cid, ctrl->m_order + m_order * 1000 });
 	}
 
+	std::sort(
+		orders.begin(),
+		orders.end(),
+		[](const std::pair<ControlID, size_t>& a, const std::pair<ControlID, size_t>& b) {
+			return a.second > b.second;
+		}
+	);
+
 	bool consumed = false;
 	for (const auto& [childId, _] : orders) {
 		auto&& child = m_children[childId];
@@ -201,7 +209,7 @@ bool Rect::hasPoint(Point point) {
 		   point.y <= y + height;
 }
 
-Rect& Rect::inflate(int amount) {
+Rect& Rect::inflate(float amount) {
 	x -= amount;
 	y -= amount;
 	width += amount * 2;
@@ -209,7 +217,7 @@ Rect& Rect::inflate(int amount) {
 	return *this;
 }
 
-int Rect::distanceToPointSquared(Point p) {
+float Rect::distanceToPointSquared(Point p) {
 	int insidePointX = std::clamp(p.x, x, x + width);
 	int insidePointY = std::clamp(p.x, y, y + height);
 		
@@ -244,10 +252,10 @@ SlicedRect SlicedRect::cutBottom(int size) {
 }
 
 Rect SlicedRect::toRect() {
-	return { minx, miny, maxx - minx, maxy - miny };
+	return { float(minx), float(miny), float(maxx - minx), float(maxy - miny) };
 }
 
 Rect SlicedRect::toRectRelative() {
-	return { 0, 0, maxx - minx, maxy - miny };
+	return { 0, 0, float(maxx - minx), float(maxy - miny) };
 }
 

@@ -116,7 +116,7 @@ int RadioSelector::getOption(int x, int y) {
 	const float buttonWidth = b.width / m_options.size();
 	for (auto&& [value, description] : m_options) {
 		Rect buttonRect = { i * buttonWidth, 0, buttonWidth, b.height };
-		if (buttonRect.hasPoint({ x, y })) {
+		if (buttonRect.hasPoint({ float(x), float(y) })) {
 			return value;
 		}
 		i++;

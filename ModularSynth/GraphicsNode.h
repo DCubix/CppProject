@@ -26,6 +26,7 @@ public:
 	virtual std::string library() = 0;
 	virtual bool multiPassNode() { return false; }
 	virtual GraphicsNodeParams parameters() = 0;
+	virtual bool render(uint32_t width, uint32_t height, size_t binding = 0) { return false; }
 
 	virtual void onCreate() = 0;
 

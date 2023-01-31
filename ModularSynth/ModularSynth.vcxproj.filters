@@ -37,18 +37,14 @@
     <Filter Include="Source Files\gui\controls">
       <UniqueIdentifier>{8f8ec9f8-6f51-459d-ac59-4edb283fb934}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\audio">
-      <UniqueIdentifier>{c12c1f07-d1f8-499f-8caa-328254c07dbe}</UniqueIdentifier>
-      <Extensions>*.h</Extensions>
-    </Filter>
-    <Filter Include="Source Files\audio">
-      <UniqueIdentifier>{6199153e-637e-477e-964c-f4844d5651b4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Header Files\gfx">
       <UniqueIdentifier>{3f9ad043-f38d-4b29-ac17-82f17ccf1db3}</UniqueIdentifier>
     </Filter>
     <Filter Include="Source Files\gfx">
       <UniqueIdentifier>{3cd00e5f-ae87-4e71-b86b-544e90edbd73}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\tools">
+      <UniqueIdentifier>{0affb3ea-463e-45bf-aa61-51c0d2520e06}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -103,12 +99,6 @@
     <ClCompile Include="Panel.cpp">
       <Filter>Source Files\gui\controls</Filter>
     </ClCompile>
-    <ClCompile Include="Audio.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="miniaudio.c">
-      <Filter>Source Files\audio</Filter>
-    </ClCompile>
     <ClCompile Include="NodeEditor.cpp">
       <Filter>Source Files\gui\controls</Filter>
     </ClCompile>
@@ -137,6 +127,9 @@
       <Filter>Source Files\gui\controls</Filter>
     </ClCompile>
     <ClCompile Include="ScrollBar.cpp">
+      <Filter>Source Files\gui\controls</Filter>
+    </ClCompile>
+    <ClCompile Include="ColorWheel.cpp">
       <Filter>Source Files\gui\controls</Filter>
     </ClCompile>
   </ItemGroup>
@@ -207,12 +200,6 @@
     <ClInclude Include="Panel.h">
       <Filter>Header Files\gui\controls</Filter>
     </ClInclude>
-    <ClInclude Include="Audio.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="miniaudio.h">
-      <Filter>Header Files\audio</Filter>
-    </ClInclude>
     <ClInclude Include="NodeEditor.h">
       <Filter>Header Files\gui\controls</Filter>
     </ClInclude>
@@ -256,6 +243,12 @@
       <Filter>Header Files\gui\controls</Filter>
     </ClInclude>
     <ClInclude Include="ScrollBar.h">
+      <Filter>Header Files\gui\controls</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCam.hpp">
+      <Filter>Header Files\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorWheel.h">
       <Filter>Header Files\gui\controls</Filter>
     </ClInclude>
   </ItemGroup>

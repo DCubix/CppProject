@@ -4,6 +4,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ModularSynth", "ModularSynth\ModularSynth.vcxproj", "{C3523227-D89D-4F8D-955F-00021A5FFC8A}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CC73B3C5-9976-4481-AA12-0F30A0BD90EC} = {CC73B3C5-9976-4481-AA12-0F30A0BD90EC}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ESCAPI", "ESCAPI\ESCAPI.vcxproj", "{CC73B3C5-9976-4481-AA12-0F30A0BD90EC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +26,14 @@ Global
 		{C3523227-D89D-4F8D-955F-00021A5FFC8A}.Release|x64.Build.0 = Release|x64
 		{C3523227-D89D-4F8D-955F-00021A5FFC8A}.Release|x86.ActiveCfg = Release|Win32
 		{C3523227-D89D-4F8D-955F-00021A5FFC8A}.Release|x86.Build.0 = Release|Win32
+		{CC73B3C5-9976-4481-AA12-0F30A0BD90EC}.Debug|x64.ActiveCfg = Debug|x64
+		{CC73B3C5-9976-4481-AA12-0F30A0BD90EC}.Debug|x64.Build.0 = Debug|x64
+		{CC73B3C5-9976-4481-AA12-0F30A0BD90EC}.Debug|x86.ActiveCfg = Debug|Win32
+		{CC73B3C5-9976-4481-AA12-0F30A0BD90EC}.Debug|x86.Build.0 = Debug|Win32
+		{CC73B3C5-9976-4481-AA12-0F30A0BD90EC}.Release|x64.ActiveCfg = Release|x64
+		{CC73B3C5-9976-4481-AA12-0F30A0BD90EC}.Release|x64.Build.0 = Release|x64
+		{CC73B3C5-9976-4481-AA12-0F30A0BD90EC}.Release|x86.ActiveCfg = Release|Win32
+		{CC73B3C5-9976-4481-AA12-0F30A0BD90EC}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

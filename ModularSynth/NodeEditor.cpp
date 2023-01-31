@@ -13,8 +13,8 @@ constexpr float socketVicinityRadius = 18.0f;
 
 static Point lerpPoint(Point a, Point b, float t) {
 	return {
-		.x = int((1.0f - t) * a.x + b.x * t),
-		.y = int((1.0f - t) * a.y + b.y * t)
+		.x = float((1.0f - t) * a.x + b.x * t),
+		.y = float((1.0f - t) * a.y + b.y * t)
 	};
 }
 
@@ -207,6 +207,8 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 void NodeEditor::onMouseDown(int button, int x, int y) {
 	const float titleHeight = titleFontSize + 8.0f;
 
+	Point mouse{ float(x), float(y) };
+
 	if (button == 1) {
 		bool clickedOnSomet = false;
 		size_t clickedNode = 0;
@@ -214,7 +216,7 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 			auto node = get(m_drawOrders[i]);
 			Dimension sz = node->size();
 			Rect bounds = { node->position.x - 5, node->position.y, sz.width + 10, sz.height };
-			if (bounds.hasPoint({ x, y })) {
+			if (bounds.hasPoint(mouse)) {
 				clickedOnSomet = true;
 				clickedNode = node->id();
 				m_selectedOutput = -1;
@@ -225,7 +227,7 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 				for (size_t i = 0; i < node->outputCount(); i++) {
 					Rect outRect = node->getOutputRect(i);
 					outRect.inflate(2);
-					if (outRect.hasPoint({ x, y })) {
+					if (outRect.hasPoint(mouse)) {
 						m_selectedOutput = i;
 						break;
 					}
@@ -235,7 +237,7 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 				for (size_t i = 0; i < node->inputCount(); i++) {
 					Rect inRect = node->getInputRect(i);
 					inRect.inflate(2);
-					if (inRect.hasPoint({ x, y })) 
+					if (inRect.hasPoint(mouse))
 					{
 						if (node->node()->input(i).connected) 
 						{
@@ -295,12 +297,14 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 }
 
 void NodeEditor::onMouseUp(int button, int x, int y) {
+	Point mouse{ float(x), float(y) };
+
 	if (m_state == NodeEditorState::draggingConnection) {
 		if(m_selectedOutput >= 0)  {
 			VisualNode* source = get(m_selectedNode);
 			VisualNode* target = nullptr;
 			int input = -1;
-			int dist = getClosestInput({ x, y }, target, input);
+			int dist = getClosestInput(mouse, target, input);
 
 			if(target && input >= 0 && dist < (socketVicinityRadius * socketVicinityRadius)) {
 				if(!target->node()->input(input).connected) 
@@ -311,7 +315,7 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 			VisualNode* source = get(m_selectedNode);
 			VisualNode* target = nullptr;
 			int output = -1;
-			int dist = getClosestOutput({ x, y }, target, output);
+			int dist = getClosestOutput(mouse, target, output);
 
 			if(target && output >= 0 && dist < (socketVicinityRadius * socketVicinityRadius)) {
 				connect(target, output, source, m_selectedInput);
@@ -324,7 +328,7 @@ void NodeEditor::onMouseUp(int button, int x, int y) {
 			Rect inRect = conn.destination->getInputRect(conn.destinationInput);
 			Point mid = lerpPoint({ outRect.x + 5, outRect.y + 5 }, { inRect.x + 5, inRect.y + 5 }, 0.5f);
 			Rect midRect = { mid.x - 6, mid.y - 6, 12, 12 };
-			if (midRect.hasPoint({ x, y }) && button == 3) { // RMB = remove link
+			if (midRect.hasPoint(mouse) && button == 3) { // RMB = remove link
 				removeConnection(conn.source, conn.sourceOutput, conn.destination, conn.destinationInput);
 				break;
 			}

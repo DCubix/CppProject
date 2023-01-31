@@ -46,10 +46,10 @@ void GUISystem::onDraw(int width, int height, float deltaTime) {
 	m_root->flush();
 
 	nvgBeginFrame(m_context, width, height, 1.0f);
-	m_root->bounds = { 0, 0, width, height };
+	m_root->bounds = { 0, 0, float(width), float(height) };
 	m_root->onDraw(m_context, deltaTime);
 
-	m_root->bounds = { 0, 0, width, height };
+	m_root->bounds = { 0, 0, float(width), float(height)};
 	
 	m_root->onPostDraw(m_context, deltaTime);
 
