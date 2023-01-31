@@ -425,7 +425,7 @@ static NodeContructor nodeTypes[] = {
 	{ "NOI", "Noise", NodeCtor(NoiseNode, generatorNodeColor), gui_NoiseNode },
 	{ "THR", "Threshold", NodeCtor(ThresholdNode, operatorNodeColor), gui_ThresholdNode },
 	{ "IMG", "Image", NodeCtor(ImageNode, externalNodeColor), gui_ImageNode },
-	{ "CAM", "Camera", NodeCtor(WebCamNode, externalNodeColor), nullptr },
+	//{ "CAM", "Camera", NodeCtor(WebCamNode, externalNodeColor), nullptr },
 	{ "UVS", "UV", NodeCtor(UVNode, generatorNodeColor), gui_UVNode },
 	{ "RGR", "Radial Gradient", NodeCtor(RadialGradientNode, generatorNodeColor), nullptr },
 	{ "NRM", "Normal Map", NodeCtor(NormalMapNode, multisampleNodeColor), gui_NormalMapNode },

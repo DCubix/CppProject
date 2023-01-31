@@ -43,6 +43,9 @@
     <Filter Include="Source Files\gfx">
       <UniqueIdentifier>{3cd00e5f-ae87-4e71-b86b-544e90edbd73}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\tools">
+      <UniqueIdentifier>{0affb3ea-463e-45bf-aa61-51c0d2520e06}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -124,6 +127,9 @@
       <Filter>Source Files\gui\controls</Filter>
     </ClCompile>
     <ClCompile Include="ScrollBar.cpp">
+      <Filter>Source Files\gui\controls</Filter>
+    </ClCompile>
+    <ClCompile Include="ColorWheel.cpp">
       <Filter>Source Files\gui\controls</Filter>
     </ClCompile>
   </ItemGroup>
@@ -237,6 +243,12 @@
       <Filter>Header Files\gui\controls</Filter>
     </ClInclude>
     <ClInclude Include="ScrollBar.h">
+      <Filter>Header Files\gui\controls</Filter>
+    </ClInclude>
+    <ClInclude Include="WebCam.hpp">
+      <Filter>Header Files\tools</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorWheel.h">
       <Filter>Header Files\gui\controls</Filter>
     </ClInclude>
   </ItemGroup>

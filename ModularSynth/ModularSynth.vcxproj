@@ -171,6 +171,7 @@
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Button.cpp" />
     <ClCompile Include="CheckBox.cpp" />
+    <ClCompile Include="ColorWheel.cpp" />
     <ClCompile Include="Control.cpp" />
     <ClCompile Include="Edit.cpp" />
     <ClCompile Include="EventSystem.cpp" />
@@ -190,6 +191,7 @@
     <ClCompile Include="ShaderGen.cpp" />
     <ClCompile Include="Slider.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClInclude Include="ColorWheel.h" />
     <ClInclude Include="Edit.h" />
     <ClInclude Include="olcUTIL_DataFile.h" />
     <ClInclude Include="renderdoc_app.h" />
@@ -232,6 +234,7 @@
     <ClInclude Include="TextureNodes.hpp" />
     <ClInclude Include="TextureNodeRegistry.h" />
     <ClInclude Include="TextureView.h" />
+    <ClInclude Include="WebCam.hpp" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>

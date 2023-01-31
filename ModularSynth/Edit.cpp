@@ -87,7 +87,7 @@ void Edit::onMouseDown(int button, int x, int y) {
 		size_t i = 0;
 		for (const auto& glyph : m_glyphs) {
 			Rect grect = { glyph.x + textPad + m_labelOffset + 4, 0, glyph.maxx - glyph.minx, bounds.height };
-			if (grect.hasPoint({ x, y })) {
+			if (grect.hasPoint({ float(x), float(y) })) {
 				m_cursorX = i;
 				break;
 			}
