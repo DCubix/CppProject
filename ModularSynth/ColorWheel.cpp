@@ -11,7 +11,7 @@ static std::tuple<float, float, float> barycentric(Point p, Point a, Point b, Po
 	return {
 		u,
 		v,
-		u + v
+		1.0f - u - v
 	};
 }
 
@@ -123,7 +123,7 @@ void ColorWheel::onDraw(NVGcontext* ctx, float deltaTime) {
 		Point B{ m_triangle[2], m_triangle[3] };
 		Point C{ m_triangle[4], m_triangle[5] };
 
-		m_triangleSelector = A + (C - A) * value + (B - A) * saturation;
+		m_triangleSelector = B*value + C*saturation + A*m_w;
 	}
 
 	nvgStrokeWidth(ctx, 4.0f);
