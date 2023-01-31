@@ -6,8 +6,9 @@
 
 
 enum class SBOrientation {
+	horizontal,
 	vertical,
-	horizontal
+	num
 };
 
 class ScrollBar : public Control {
@@ -21,6 +22,12 @@ public:
 	void onMouseMove(int x, int y, int dx, int dy) override;
 	void onMouseEnter() override;
 	void onMouseLeave() override;
+
+	inline bool shouldShow() const { 
+		if(abs(pageMax - pageMin) < -1e5f)
+			return false;
+		return pageSize < (pageMax - pageMin); 
+	}
 
 	std::function<void(float)> onChange{ nullptr };
 
