@@ -115,7 +115,7 @@ protected:
 		m_focused{ false },
 		m_dragging{ false };
 
-	Point screenToLocalPoint(Point src);
+	virtual Point screenToLocalPoint(Point src);
 	void checkMouseInside();
 
 	bool handleMouseButton(WindowEvent ev);
