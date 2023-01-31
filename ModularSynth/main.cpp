@@ -103,6 +103,8 @@ public:
 			singleNodeEditor = createTextureNodeEditorGui(node);
 			if (singleNodeEditor) {
 				pnlSettings->addChild(singleNodeEditor);
+				singleNodeEditor->bounds.width = ned->bounds.width;
+				singleNodeEditor->bounds.height = ned->bounds.height;
 			}
 
 			OutputNode* out = dynamic_cast<OutputNode*>(node->node());
