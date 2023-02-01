@@ -35,8 +35,8 @@ struct Point {
 
 	inline Point operator *(float b) {
 		return {
-			x - b,
-			y - b
+			x * b,
+			y * b
 		};
 	}
 
