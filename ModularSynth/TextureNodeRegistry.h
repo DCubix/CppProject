@@ -164,6 +164,7 @@ static Control* gui_ColorNode(VisualNode* node) {
 		componentToByte(nd->param("Color").value[1]),
 		componentToByte(nd->param("Color").value[2])
 	);
+	hexEdt->label = "HTML:";
 	hexEdt->onEditingComplete = [=](const std::string& text) {
 		std::string txt =
 			text.find('#') != std::string::npos ?
