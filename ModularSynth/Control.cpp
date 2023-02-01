@@ -153,7 +153,7 @@ bool Control::handleMouseButton(WindowEvent ev) {
 bool Control::handleMouseMotion(WindowEvent ev) {
 	Point screenPos = { ev.screenX, ev.screenY };
 	Point mpos = screenToLocalPoint(screenPos);
-	if (!localBounds().hasPoint(mpos) && !m_dragging) {
+	if (!localBounds().hasPoint(mpos)) {
 		checkMouseInside();
 		return false;
 	}

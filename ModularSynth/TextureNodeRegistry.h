@@ -2,6 +2,7 @@
 
 #define NOMINMAX
 #include <algorithm>
+#include <sstream>
 
 #include "TextureNodes.hpp"
 #include "NodeEditor.h"
@@ -13,6 +14,7 @@
 #include "RadioSelector.h"
 #include "Button.h"
 #include "Edit.h"
+#include "ColorWheel.h"
 
 #include "portable-file-dialogs.h"
 
@@ -41,6 +43,30 @@ struct NodeContructor {
 
 #define NodeCtor(T, c) [](NodeEditor* editor, const std::string& name, const std::string& code) { \
 	return editor->create<T, VisualNode>(name, code, c);\
+}
+
+static Control* gui_Labelled(
+	const std::string& label,
+	Control* control,
+	float height = 30.0f
+) {
+	Panel* row = new Panel();
+	row->drawBackground(false);
+	row->bounds = { 0, 0, 0, height };
+
+	Label* lbl = new Label();
+	lbl->text = label;
+	lbl->alignment = HorizontalAlignment::right;
+	row->addChild(lbl);
+
+	row->addChild(control);
+
+	RowLayout* rl = new RowLayout(2, 3);
+	rl->expansion[0] = 0.7f;
+	rl->expansion[1] = 1.3f;
+	row->setLayout(rl);
+
+	return row;
 }
 
 static Control* gui_ValueSlider(
@@ -116,25 +142,77 @@ static Control* gui_Vector(
 	return root;
 }
 
+static uint8_t componentToByte(float val) {
+	return uint8_t(std::clamp(val, 0.0f, 1.0f) * 255.0f);
+}
+
 static Control* gui_ColorNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 0 };
 	pnl->setLayout(new ColumnLayout());
 
-	const std::string labels[] = { "Red", "Geen", "Blue", "Alpha" };
-
 	GraphicsNode* nd = (GraphicsNode*)node->node();
-	for (size_t i = 0; i < 4; i++) {
-		auto ctrl = gui_ValueSlider(
-			labels[i], nd->param("Color").value[i],
-			[=](float v) {
-				nd->setParam("Color", i, v);
-			}
+
+	auto colorWheel = new ColorWheel();
+
+	Edit* hexEdt = new Edit();
+	hexEdt->inputFilter = std::regex("[#0-9a-fA-F]");
+	hexEdt->text = std::format(
+		"#{:02x}{:02x}{:02x}",
+		componentToByte(nd->param("Color").value[0]),
+		componentToByte(nd->param("Color").value[1]),
+		componentToByte(nd->param("Color").value[2])
+	);
+	hexEdt->onEditingComplete = [=](const std::string& text) {
+		std::string txt =
+			text.find('#') != std::string::npos ?
+			text.substr(1) : text;
+
+		int value = std::stoi(txt, nullptr, 16);
+		int r = (value & 0xFF0000) >> 16;
+		int g = (value & 0xFF00) >> 8;
+		int b = (value & 0xFF);
+
+		nd->setParam("Color", float(r) / 255.0f, float(g) / 255.0f, float(b) / 255.0f);
+		auto col = nd->paramValue("Color");
+		colorWheel->color({ col[0], col[1], col[2], 1.0f });
+	};
+
+	colorWheel->bounds.height = 150.0f;
+	colorWheel->color({
+		.r = nd->param("Color").value[0],
+		.g = nd->param("Color").value[1],
+		.b = nd->param("Color").value[2],
+		.a = 1.0f
+	});
+	colorWheel->onChange = [=](const Color& col) {
+		nd->setParam("Color", col.r, col.g, col.b);
+		hexEdt->text = std::format(
+			"#{:02x}{:02x}{:02x}",
+			componentToByte(col.r),
+			componentToByte(col.g),
+			componentToByte(col.b)
 		);
-		pnl->addChild(ctrl);
-		pnl->bounds.height += 30;
-	}
+	};
+
+	auto picker = gui_Labelled("Color", colorWheel, 160.0f);
+	pnl->addChild(picker);
+
+	pnl->bounds.height += picker->bounds.height;
+
+	auto alpha = gui_ValueSlider(
+		"Alpha", nd->param("Color").value[3],
+		[=](float v) {
+			nd->setParam("Color", 3ull, v);
+		}
+	);
+	pnl->addChild(alpha);
+	pnl->bounds.height += 30;
+
+	auto html = gui_Labelled("HTML", hexEdt);
+	pnl->addChild(html);
+	pnl->bounds.height += 30;
 
 	return pnl;
 }

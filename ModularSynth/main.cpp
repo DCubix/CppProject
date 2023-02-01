@@ -145,12 +145,6 @@ public:
 		pnlPreview->addChild(previewControl);
 		//
 
-
-		ColorWheel* cw = gui->create<ColorWheel>();
-		cw->bounds = { 250, 50, 200, 200 };
-		cw->setOrder(9999);
-
-
 		/*int wgCount[3], wgSize[3];
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &wgCount[0]);
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 1, &wgCount[1]);

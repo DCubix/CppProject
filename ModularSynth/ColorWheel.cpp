@@ -2,7 +2,69 @@
 
 #include <format>
 
-constexpr float hueBarWidth = 18.0f;
+constexpr float hueBarWidth = 16.0f;
+
+static void rgbToHSV(float r, float g, float b, float& h, float& s, float& v) {
+	float min, max, delta;
+
+	min = std::min(std::min(r, g), b);
+	max = std::max(std::max(r, g), b);
+
+	v = max;
+	delta = max - min;
+
+	if (delta < 1e-5f) {
+		s = 0.0f;
+		h = 0.0f;
+		return;
+	}
+
+	if (max > 0.0f) {
+		s = (delta / max);
+	}
+	else {
+		s = 0.0f;
+		h = NAN;
+		return;
+	}
+
+	if (r >= max) {
+		h = (g - b) / delta;
+	}
+	else {
+		if (g >= max) {
+			h = 2.0f + (b - r) / delta;
+		}
+		else {
+			h = 4.0f + (r - g) / delta;
+		}
+	}
+
+	h *= 60.0;
+
+	if (h < 0.0) {
+		h += 360.0;
+	}
+
+	h /= 360.0f;
+}
+
+static void hsvToRGB(float h, float s, float v, float& r, float& g, float& b) {
+	int i = int(h * 6);
+	float f = h * 6 - i;
+	float p = v * (1 - s);
+	float q = v * (1 - f * s);
+	float t = v * (1 - (1 - f) * s);
+
+	switch (i % 6) {
+		case 0: r = v, g = t, b = p; break;
+		case 1: r = q, g = v, b = p; break;
+		case 2: r = p, g = v, b = t; break;
+		case 3: r = p, g = q, b = v; break;
+		case 4: r = t, g = p, b = v; break;
+		case 5: r = v, g = p, b = q; break;
+	}
+}
 
 static std::tuple<float, float, float> barycentric(Point p, Point a, Point b, Point c) {
 	float u = (a.x * (c.y - a.y) + (p.y - a.y) * (c.x - a.x) - p.x * (c.y - a.y)) / ((b.y - a.y) * (c.x - a.x) - (b.x - a.x) * (c.y - a.y));
@@ -19,6 +81,8 @@ void ColorWheel::onDraw(NVGcontext* ctx, float deltaTime) {
 	Rect b = bounds;
 
 	nvgSave(ctx);
+
+	float hue = m_hsv[0], saturation = m_hsv[1], value = m_hsv[2];
 
 	float cx = b.width * 0.5f;
 	float cy = b.height * 0.5f;
@@ -71,83 +135,69 @@ void ColorWheel::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgFillPaint(ctx, paint);
 	nvgFill(ctx);
 
-	// Center triangle
-	float r = r0 - 6;
-	float ax = ::cosf(120.0f / 180.0f * NVG_PI) * r;
-	float ay = ::sinf(120.0f / 180.0f * NVG_PI) * r;
-	float bx = ::cosf(-120.0f / 180.0f * NVG_PI) * r;
-	float by = ::sinf(-120.0f / 180.0f * NVG_PI) * r;
+	nvgRestore(ctx);
 
-	m_triangle = {
-		bx, by,
-		ax, ay,
-		r, 0.0f
-	};
+	nvgSave(ctx);
+	nvgTranslate(ctx, cx, cy);
+	// current color view
+	nvgBeginPath(ctx);
 
-	float xform[9];
-	nvgTransformRotate(xform, hue * NVG_PI * 2);
+	nvgMoveTo(ctx, -r1, r1);
+	nvgLineTo(ctx, -r1 + 32.0f, r1);
+	nvgLineTo(ctx, -r1, r1 - 32.0f);
+	nvgClosePath(ctx);
 
-	for (size_t i = 0; i < 6; i += 2) {
-		nvgTransformPoint(&m_triangle[i], &m_triangle[i + 1], xform, m_triangle[i], m_triangle[i + 1]);
-		m_triangle[i] += cx;
-		m_triangle[i + 1] += cy;
-	}
+	nvgFillColor(ctx, nvgRGBf(m_color.r, m_color.g, m_color.b));
+	nvgFill(ctx);
+
+	nvgStrokeColor(ctx, nvgRGBf(1.0f, 1.0f, 1.0f));
+	nvgStroke(ctx);
+
+	// Center square
+	float r = (r1 - 1) / 2.0f;
 
 	nvgBeginPath(ctx);
-	nvgMoveTo(ctx, r, 0);
-	nvgLineTo(ctx, ax, ay);
-	nvgLineTo(ctx, bx, by);
-	nvgClosePath(ctx);
-	paint = nvgLinearGradient(ctx, r, 0, ax, ay, nvgHSLA(hue, 1.0f, 0.5f, 255), nvgRGBA(255, 255, 255, 255));
+	nvgRect(ctx, -r, -r, r * 2, r * 2);
+
+	paint = nvgLinearGradient(ctx, -r, 0.0f, r, 0.0f, nvgRGBA(255, 255, 255, 255), nvgHSLA(hue, 1.0f, 0.5f, 255));
 	nvgFillPaint(ctx, paint);
 	nvgFill(ctx);
-	paint = nvgLinearGradient(ctx, (r + ax) * 0.5f, (0 + ay) * 0.5f, bx, by, nvgRGBA(0, 0, 0, 0), nvgRGBA(0, 0, 0, 255));
+
+	paint = nvgLinearGradient(ctx, 0.0f, -r, 0.0f, r, nvgRGBA(0, 0, 0, 0), nvgRGBA(0, 0, 0, 255));
 	nvgFillPaint(ctx, paint);
 	nvgFill(ctx);
+
 	nvgStrokeColor(ctx, nvgRGBA(0, 0, 0, 64));
 	nvgStroke(ctx);
-
-	paint = nvgRadialGradient(ctx, ax, ay, 7, 9, nvgRGBA(0, 0, 0, 64), nvgRGBA(0, 0, 0, 0));
-	nvgBeginPath(ctx);
-	nvgRect(ctx, ax - 20, ay - 20, 40, 40);
-	nvgCircle(ctx, ax, ay, 7);
-	nvgPathWinding(ctx, NVG_HOLE);
-	nvgFillPaint(ctx, paint);
-	nvgFill(ctx);
-
+	//
 	nvgRestore(ctx);
 
-	// Select circle on triangle
-	{
-		Point A{ m_triangle[0], m_triangle[1] };
-		Point B{ m_triangle[2], m_triangle[3] };
-		Point C{ m_triangle[4], m_triangle[5] };
-
-		m_triangleSelector = B*value + C*saturation + A*m_w;
-	}
-
-	nvgStrokeWidth(ctx, 4.0f);
+	nvgStrokeWidth(ctx, 2.0f);
 	nvgBeginPath(ctx);
-	nvgCircle(ctx, m_triangleSelector.x, m_triangleSelector.y, 5);
-	nvgStrokeColor(ctx, nvgRGBA(255, 255, 0, 192));
+	nvgCircle(ctx, m_selector.x, m_selector.y, 4);
+	nvgStrokeColor(ctx, nvgRGBA(255, 255, 255, 192));
 	nvgStroke(ctx);
 
+	//nvgFillColor(ctx, nvgRGB(255, 255, 0));
+	//nvgText(ctx, 0.0f, 0.0f, std::format("state: {}", size_t(state)).c_str(), nullptr);
+	//nvgText(ctx, 0.0f, 6.0f, std::format("val: {:.2f}, sat: {:.2f}, w: {:.2f}", value, saturation, m_w).c_str(), nullptr);
+	//nvgText(ctx, 0.0f, 24.0f, std::format("x: {:.2f}, y: {:.2f}", m_triangleSelector.x, m_triangleSelector.y).c_str(), nullptr);
 
-	nvgFillColor(ctx, nvgRGB(255, 255, 0));
-	nvgText(ctx, 0.0f, 0.0f, std::format("u: {:.2f}, v: {:.2f}, w: {:.2f}", value, saturation, m_w).c_str(), nullptr);
-	nvgText(ctx, 0.0f, 18.0f, std::format("x: {:.2f}, y: {:.2f}", m_triangleSelector.x, m_triangleSelector.y).c_str(), nullptr);
-
-	nvgText(ctx, m_triangle[0], m_triangle[1], "A", nullptr);
-	nvgText(ctx, m_triangle[2], m_triangle[3], "B", nullptr);
-	nvgText(ctx, m_triangle[4], m_triangle[5], "C", nullptr);
+	//nvgText(ctx, m_triangle[0], m_triangle[1], "A", nullptr);
+	//nvgText(ctx, m_triangle[2], m_triangle[3], "B", nullptr);
 
 	nvgRestore(ctx);
+
+	/*nvgBeginPath(ctx);
+	nvgRect(ctx, 0.0f, 0.0f, b.width, b.height);
+	nvgStrokeColor(ctx, nvgRGB(0, 255, 255));
+	nvgStroke(ctx);*/
 }
 
 void ColorWheel::onMouseMove(int x, int y, int dx, int dy) {
 	switch (state) {
 		case DragState::hueRing: updateHue(x, y); break;
-		case DragState::satValTriangle: updateSatVal(x, y); break;
+		case DragState::satVal: updateSatVal(x, y); break;
 		default: break;
 	}
 }
@@ -164,25 +214,32 @@ void ColorWheel::onMouseDown(int button, int x, int y) {
 	Point cm = (mouse - center);
 	float dist = ::sqrtf(cm.dot(cm));
 
-	auto [u, v, w] = barycentric(
-		mouse,
-		{ m_triangle[0], m_triangle[1] },
-		{ m_triangle[2], m_triangle[3] },
-		{ m_triangle[4], m_triangle[5] }
-	);
-	bool inTriangle = u > 0.0f && v > 0.0f && w < 1.0f;
+	float cx = b.width * 0.5f;
+	float cy = b.height * 0.5f;
+	float r = (r1 - 1) / 2.0f;
 
-	if (inTriangle) {
-		state = DragState::satValTriangle;
-		updateSatVal(x, y);
+	Rect square{
+		cx - r,
+		cy - r,
+		r * 2,
+		r * 2
+	};
+
+	if (square.hasPoint(mouse)) {
+		state = DragState::satVal;
+		onMouseMove(x, y, 0, 0);
 	}
 	else if (dist >= r0 && dist <= r1) {
 		state = DragState::hueRing;
-		updateHue(x, y);
+		onMouseMove(x, y, 0, 0);
 	}
 }
 
 void ColorWheel::onMouseUp(int button, int x, int y) {
+	state = DragState::idling;
+}
+
+void ColorWheel::onMouseLeave() {
 	state = DragState::idling;
 }
 
@@ -193,19 +250,65 @@ void ColorWheel::updateHue(int x, int y) {
 	Point cm = (mouse - center);
 
 	float angle = ::atan2(cm.y, cm.x) + NVG_PI;
-	hue = (angle / NVG_PI) * 0.5f + 0.5f;
+	m_hsv[0] = (angle / NVG_PI) * 0.5f + 0.5f;
+
+	updateColor();
+	updatePoint();
 }
 
 void ColorWheel::updateSatVal(int x, int y) {
 	Point mouse{ float(x), float(y) };
-	auto [u, v, w] = barycentric(
-		mouse,
-		{ m_triangle[0], m_triangle[1] },
-		{ m_triangle[2], m_triangle[3] },
-		{ m_triangle[4], m_triangle[5] }
-	);
+	Rect b = bounds;
 
-	value = u;// std::clamp(u, 0.0f, 1.0f);
-	saturation = v;//std::clamp(v, 0.0f, 1.0f);
-	m_w = w;
+	float cx = b.width * 0.5f;
+	float cy = b.height * 0.5f;
+	float r1 = (b.width < b.height ? b.width : b.height) * 0.5f - 5.0f;
+	float r = (r1 - 1) / 2.0f;
+
+	Rect square{
+		cx - r,
+		cy - r,
+		r * 2,
+		r * 2
+	};
+
+	m_hsv[1] = std::clamp((mouse.x - square.x) / square.width, 0.0f, 1.0f);
+	m_hsv[2] = 1.0f - std::clamp((mouse.y - square.y) / square.height, 0.0f, 1.0f);
+
+	updateColor();
+	updatePoint();
+}
+
+void ColorWheel::updateColor() {
+	hsvToRGB(m_hsv[0], m_hsv[1], m_hsv[2], m_color.r, m_color.g, m_color.b);
+	if (onChange) onChange(m_color);
+}
+
+void ColorWheel::updatePoint() {
+	Rect b = bounds;
+
+	float cx = b.width * 0.5f;
+	float cy = b.height * 0.5f;
+	float r1 = (b.width < b.height ? b.width : b.height) * 0.5f - 5.0f;
+	float r = (r1 - 1) / 2.0f;
+
+	Rect square{
+		cx - r,
+		cy - r,
+		r * 2,
+		r * 2
+	};
+
+	m_selector.x = square.x + m_hsv[1] * square.width;
+	m_selector.y = square.y + (1.0f - m_hsv[2]) * square.height;
+}
+
+void ColorWheel::color(Color col) {
+	m_color = col;
+	rgbToHSV(col.r, col.g, col.b, m_hsv[0], m_hsv[1], m_hsv[2]);
+	updateColor();
+
+	if (onChange) onChange(m_color);
+
+	updatePoint();
 }

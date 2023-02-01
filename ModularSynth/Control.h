@@ -89,6 +89,24 @@ struct Color {
 	float r, g, b, a;
 
 	float luminance() const { return 0.2126f * r + 0.7152f * g + 0.0722f * b; };
+
+	inline Color operator *(float b) {
+		return {
+			this->r * b,
+			this->g * b,
+			this->b * b,
+			this->a
+		};
+	}
+
+	inline Color operator +(Color b) {
+		return {
+			this->r + b.r,
+			this->g + b.g,
+			this->b + b.b,
+			(this->a + b.a) * 0.5f
+		};
+	}
 };
 
 class GUISystem;

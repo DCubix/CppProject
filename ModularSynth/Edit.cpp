@@ -1,5 +1,7 @@
 #include "Edit.h"
 
+#include <iostream>
+
 constexpr float textPad = 8.0f;
 
 void Edit::onDraw(NVGcontext* ctx, float deltaTime) {
@@ -58,6 +60,8 @@ void Edit::onDraw(NVGcontext* ctx, float deltaTime) {
 bool Edit::onKeyPress(int keyCode) {
 	if (!m_focused) return false;
 
+	std::cout << keyCode << "\n";
+
 	switch (keyCode) {
 		case VK_RIGHT: m_cursorX = std::min(text.size(), m_cursorX + 1); break;
 		case VK_LEFT: m_cursorX = m_cursorX > 0 ? m_cursorX - 1 : 0; break;
@@ -75,6 +79,7 @@ bool Edit::onKeyPress(int keyCode) {
 		} break;
 		case VK_HOME: m_cursorX = 0; break;
 		case VK_END: m_cursorX = text.size(); break;
+		case VK_RETURN: if (onEditingComplete) onEditingComplete(text); break;
 		default: resetCursor(); return false;
 	}
 
@@ -84,9 +89,11 @@ bool Edit::onKeyPress(int keyCode) {
 
 void Edit::onMouseDown(int button, int x, int y) {
 	if (button == 1) {
+		m_cursorX = m_glyphs.size() - 1;
 		size_t i = 0;
 		for (const auto& glyph : m_glyphs) {
-			Rect grect = { glyph.x + textPad + m_labelOffset + 4, 0, glyph.maxx - glyph.minx, bounds.height };
+			int gw = glyph.maxx - glyph.minx;
+			Rect grect = { (glyph.x + textPad + m_labelOffset + 4) - gw/2, 0, gw, bounds.height };
 			if (grect.hasPoint({ float(x), float(y) })) {
 				m_cursorX = i;
 				break;
@@ -95,6 +102,10 @@ void Edit::onMouseDown(int button, int x, int y) {
 		}
 		resetCursor();
 	}
+}
+
+void Edit::onBlur() {
+	if (onEditingComplete) onEditingComplete(text);
 }
 
 bool Edit::onType(TCHAR charCode) {

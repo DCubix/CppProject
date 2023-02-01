@@ -13,11 +13,12 @@ public:
 	bool onType(TCHAR charCode) override;
 
 	void onMouseDown(int button, int x, int y) override;
+	void onBlur() override;
 
 	std::string text{ "" }, label{ "" };
 	std::regex inputFilter{ ".?" };
 
-	std::function<void(const std::string&)> onChange;
+	std::function<void(const std::string&)> onChange, onEditingComplete;
 
 private:
 	size_t m_cursorX{ 0 };
