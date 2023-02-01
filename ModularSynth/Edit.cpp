@@ -1,6 +1,6 @@
 #include "Edit.h"
 
-#include <iostream>
+#include <atlstr.h>
 
 constexpr float textPad = 8.0f;
 
@@ -60,31 +60,67 @@ void Edit::onDraw(NVGcontext* ctx, float deltaTime) {
 bool Edit::onKeyPress(int keyCode) {
 	if (!m_focused) return false;
 
-	std::cout << keyCode << "\n";
-
-	switch (keyCode) {
-		case VK_RIGHT: m_cursorX = std::min(text.size(), m_cursorX + 1); break;
-		case VK_LEFT: m_cursorX = m_cursorX > 0 ? m_cursorX - 1 : 0; break;
-		case VK_BACK: {
-			if (m_cursorX > 0) {
-				m_cursorX = m_cursorX > 0 ? m_cursorX - 1 : 0;
+	if (!m_ctrl) {
+		switch (keyCode) {
+			case VK_RIGHT: m_cursorX = std::min(text.size(), m_cursorX + 1); break;
+			case VK_LEFT: m_cursorX = m_cursorX > 0 ? m_cursorX - 1 : 0; break;
+			case VK_BACK: {
+				if (m_cursorX > 0) {
+					m_cursorX = m_cursorX > 0 ? m_cursorX - 1 : 0;
+					text.erase(text.begin() + m_cursorX);
+					if (onChange) onChange(text);
+				}
+			} break;
+			case VK_DELETE: {
 				text.erase(text.begin() + m_cursorX);
+				m_cursorX = std::min(text.size(), m_cursorX);
 				if (onChange) onChange(text);
-			}
-		} break;
-		case VK_DELETE: {
-			text.erase(text.begin() + m_cursorX);
-			m_cursorX = std::min(text.size(), m_cursorX);
-			if (onChange) onChange(text);
-		} break;
-		case VK_HOME: m_cursorX = 0; break;
-		case VK_END: m_cursorX = text.size(); break;
-		case VK_RETURN: if (onEditingComplete) onEditingComplete(text); break;
-		default: resetCursor(); return false;
+			} break;
+			case VK_HOME: m_cursorX = 0; break;
+			case VK_END: m_cursorX = text.size(); break;
+			case VK_RETURN: if (onEditingComplete) onEditingComplete(text); break;
+			case VK_CONTROL: m_ctrl = true; break;
+			default: resetCursor(); return false;
+		}
+	}
+	else {
+		switch (keyCode) {
+			case 'V':
+			case 'v': {
+				if (IsClipboardFormatAvailable(CF_TEXT)) {
+					if (OpenClipboard(NULL)) {
+						HANDLE data = GetClipboardData(CF_TEXT);
+						if (data) {
+							char* txt = static_cast<char*>(GlobalLock(data));
+							if (txt) {
+								text = std::string(txt);
+								if (onEditingComplete) onEditingComplete(text);
+
+								m_cursorX = std::min(text.size(), m_cursorX);
+								resetCursor();
+
+								GlobalUnlock(data);
+							}
+						}
+						CloseClipboard();
+					}
+				}
+			} break;
+		}
+
+		m_ctrl = false;
 	}
 
 	resetCursor();
 	return true;
+}
+
+bool Edit::onKeyRelease(int keyCode) {
+	if (keyCode == VK_CONTROL) {
+		m_ctrl = false;
+		return true;
+	}
+	return false;
 }
 
 void Edit::onMouseDown(int button, int x, int y) {
