@@ -230,3 +230,28 @@ void NodeGraph::buildNodePath() {
 	std::cout << "]\n";
 #endif
 }
+
+void NodeGraph::remove(size_t id) {
+	auto node = get(id);
+	if (node == nullptr) return;
+
+	std::vector<Connection> connToRemove;
+	for (const auto& conn : m_connections) {
+		if (conn.destination == node || conn.source == node) {
+			connToRemove.push_back(conn);
+		}
+	}
+
+	for (const auto& conn : connToRemove) {
+		removeConnection(conn.source, conn.sourceOutput, conn.destination, conn.destinationInput);
+	}
+
+	auto pos = std::find_if(m_nodes.begin(), m_nodes.end(), [id](const std::unique_ptr<Node>& nd) {
+		return nd->id() == id;
+	});
+	if (pos != m_nodes.end()) {
+		m_nodes.erase(pos);
+	}
+
+	buildNodePath();
+}

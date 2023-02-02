@@ -95,20 +95,21 @@ public:
 		ned->onSelect = [=](VisualNode* node) {
 			if (singleNodeEditor) {
 				pnlSettings->removeChild(singleNodeEditor->id());
-				//gui->removeControl(singleNodeEditor->id());
 				singleNodeEditor = nullptr;
 			}
 
-			singleNodeEditor = createTextureNodeEditorGui(node);
-			if (singleNodeEditor) {
-				pnlSettings->addChild(singleNodeEditor);
-			}
+			if (node) {
+				singleNodeEditor = createTextureNodeEditorGui(node);
+				if (singleNodeEditor) {
+					pnlSettings->addChild(singleNodeEditor);
+				}
 
-			OutputNode* out = dynamic_cast<OutputNode*>(node->node());
-			if (out) {
-				if (!out->texture) return;
+				OutputNode* out = dynamic_cast<OutputNode*>(node->node());
+				if (out) {
+					if (!out->texture) return;
 
-				previewControl->setTexture(out->texture.get());
+					previewControl->setTexture(out->texture.get());
+				}
 			}
 		};
 

@@ -25,6 +25,7 @@ public:
 	void onCreate() {
 		addOutput("Output", ValueType::vec4);
 		addParam("Color", ValueType::vec4);
+		setParam("Color", 0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 };

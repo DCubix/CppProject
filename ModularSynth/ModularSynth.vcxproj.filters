@@ -269,5 +269,8 @@
     <ClInclude Include="LineEditor.h">
       <Filter>Header Files\gui\behaviors</Filter>
     </ClInclude>
+    <ClInclude Include="Icons.hpp">
+      <Filter>Header Files\gui</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

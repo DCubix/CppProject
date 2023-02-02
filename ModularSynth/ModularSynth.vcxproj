@@ -192,6 +192,7 @@
     <ClCompile Include="ShaderGen.cpp" />
     <ClCompile Include="Slider.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClInclude Include="Icons.hpp" />
     <ClInclude Include="LineEditor.h" />
     <ClInclude Include="ColorWheel.h" />
     <ClInclude Include="Edit.h" />

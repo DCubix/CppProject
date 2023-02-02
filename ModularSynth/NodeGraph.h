@@ -95,6 +95,8 @@ public:
 		return nullptr;
 	}
 
+	void remove(size_t id);
+
 	bool connect(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
 	void removeConnection(Node* source, size_t sourceOutput, Node* destination, size_t destinationInput);
 
