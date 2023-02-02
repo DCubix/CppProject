@@ -1,5 +1,7 @@
 #include "Button.h"
 
+#include "Icons.hpp"
+
 constexpr float dur = 0.08f;
 
 void Button::onDraw(NVGcontext* ctx, float deltaTime) {
@@ -22,10 +24,22 @@ void Button::onDraw(NVGcontext* ctx, float deltaTime) {
 	}
 	nvgFill(ctx);
 
+	float textOffset = 0.0f;
+	if (icon > 0) {
+		auto ico = icons[icon];
+		textOffset += ico.viewBoxWidth / 2 + 3.0f;
+
+		float txtBounds[4] = { 0.0f };
+		nvgTextBounds(ctx, 0.0f, 0.0f, text.c_str(), nullptr, txtBounds);
+		float tw = (txtBounds[2] - txtBounds[0]);
+
+		ico.render(ctx, b.width / 2 - (tw / 2 + 3.0f), b.height / 2, clickFgValue, clickFgValue, clickFgValue);
+	}
+
 	nvgFillColor(ctx, nvgRGBf(clickFgValue, clickFgValue, clickFgValue));
 	nvgTextAlign(ctx, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
 	nvgFontSize(ctx, 16.0f);
-	nvgTextBox(ctx, 0, b.height / 2 + 1.5f, b.width, text.c_str(), nullptr);
+	nvgTextBox(ctx, textOffset, b.height / 2 + 1.5f, b.width, text.c_str(), nullptr);
 }
 
 void Button::onMouseDown(int button, int x, int y) {

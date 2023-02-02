@@ -20,6 +20,8 @@
 
 #include "ShaderGen.h"
 
+#include "Icons.hpp"
+
 #include <format>
 #include <sstream>
 #include <array>
@@ -29,6 +31,7 @@
 
 struct MenuItem {
 	std::string text;
+	size_t icon;
 	std::function<void()> action;
 };
 
@@ -73,14 +76,15 @@ public:
 
 		// menus
 		MenuItem menu[] = {
-			{ "Open", [=]() { menu_OpenGraph(); } },
-			{ "Save", [=]() { menu_SaveGraph(); } },
+			{ "Open", icoFolderOpen, [=]() { menu_OpenGraph(); } },
+			{ "Save", icoSave, [=]() { menu_SaveGraph(); } },
 		};
 
 		for (const auto& item : menu) {
 			Button* menuButton = new Button();
 			menuButton->text = item.text;
-			menuButton->bounds = topBar.cutLeft(80).toRect().inflate(-4);
+			menuButton->icon = item.icon;
+			menuButton->bounds = topBar.cutLeft(100).toRect().inflate(-4);
 			menuButton->onPress = item.action;
 			//gui->addControl(menuButton);
 			pnlMenu->addChild(menuButton);
