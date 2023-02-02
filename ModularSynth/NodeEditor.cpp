@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+#include "Icons.hpp"
+
 size_t NodeEditor::g_NodeID = 1;
 
 constexpr float titleFontSize = 15.0f;
@@ -58,6 +60,8 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgScissor(ctx, 6.0f, 6.0f, b.width - 12.0f, b.height - 12.0f);
 	for (size_t nodeId : m_drawOrders) {
 		auto node = get(nodeId);
+		if (node == nullptr) continue;
+
 		node->onDraw(ctx, deltaTime);
 	}
 
@@ -78,15 +82,6 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgCircle(ctx, inRect.x + 5, inRect.y + 5, 4.5f);
 		nvgFillColor(ctx, nvgRGBf(1.0f, 1.0f, 1.0f));
 		nvgFill(ctx);
-
-		Point mid = lerpPoint({ outRect.x + 5, outRect.y + 5 }, { inRect.x + 5, inRect.y + 5 }, 0.5f);
-
-		nvgBeginPath(ctx);
-		nvgMoveTo(ctx, mid.x - 6, mid.y - 6);
-		nvgLineTo(ctx, mid.x + 6, mid.y + 6);
-		nvgMoveTo(ctx, mid.x + 6, mid.y - 6);
-		nvgLineTo(ctx, mid.x - 6, mid.y + 6);
-		nvgStroke(ctx);
 	}
 	nvgRestore(ctx);
 
@@ -211,9 +206,12 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 
 	if (button == 1) {
 		bool clickedOnSomet = false;
+		bool clickedOnClose = false;
 		size_t clickedNode = 0;
 		for (size_t i = m_drawOrders.size(); i-- > 0;) {
 			auto node = get(m_drawOrders[i]);
+			if (node == nullptr) continue;
+
 			Dimension sz = node->size();
 			Rect bounds = { node->position.x - 5, node->position.y, sz.width + 10, sz.height };
 			if (bounds.hasPoint(mouse)) {
@@ -222,6 +220,13 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 				m_selectedOutput = -1;
 				m_selectedInput = -1;
 				rebuildDrawOrder();
+
+				// check if we clicked on the close X button
+				Rect closeBounds = { node->position.x + (sz.width - 21), node->position.y, 20, 20 };
+				if (closeBounds.hasPoint(mouse)) {
+					clickedOnClose = true;
+					break;
+				}
 
 				// check for out click
 				for (size_t i = 0; i < node->outputCount(); i++) {
@@ -233,7 +238,7 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 					}
 				}
 
-				//Clicked input node instead, decide do we reroute a connection, or do we start a new connection.
+				// Clicked input node instead, decide do we reroute a connection, or do we start a new connection.
 				for (size_t i = 0; i < node->inputCount(); i++) {
 					Rect inRect = node->getInputRect(i);
 					inRect.inflate(2);
@@ -276,17 +281,24 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 			m_selectedNode = 0;
 		}
 		else {
-			if(m_selectedOutput != -1 || m_selectedInput != -1) 
-			{
+			if (clickedOnClose) {
+				remove(clickedNode);
+				m_selectedOutput = -1;
+				m_selectedInput = -1;
+				m_selectedNode = 0;
+				if (onSelect) onSelect(nullptr);
+				return;
+			}
+
+			if (m_selectedOutput != -1 || m_selectedInput != -1) {
 				m_state = NodeEditorState::draggingConnection;
 			}
-			else 
-			{
+			else {
 				m_state = NodeEditorState::draggingNode;
 			}
 
-			if(m_state == NodeEditorState::draggingConnection)
-					m_proximityAnimation = 1.0f;
+			if (m_state == NodeEditorState::draggingConnection)
+				m_proximityAnimation = 1.0f;
 
 			if (clickedNode != m_selectedNode) {
 				m_selectedNode = clickedNode;
@@ -506,6 +518,8 @@ void VisualNode::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgFillColor(ctx, nvgRGBAf(0.0f, 0.0f, 0.0f, 0.5f));
 	nvgFill(ctx);
 
+	icons[icoClose].render(ctx, b.width - 10.0f, titleHeight / 2, 1.0f, 1.0f, 1.0f, 1.0f, 20.0f);
+
 	nvgFillColor(ctx, nvgRGBAf(1.0f, 1.0f, 1.0f, 1.0f));
 	nvgFontSize(ctx, titleFontSize);
 	nvgTextAlign(ctx, NVG_ALIGN_MIDDLE);
@@ -642,6 +656,9 @@ Dimension VisualNode::computeSize(NVGcontext* ctx) {
 
 	nvgRestore(ctx);
 
+	// include the close button
+	width += 24;
+
 	m_size.width = width;
 	m_size.height = height;
 
@@ -656,7 +673,7 @@ void NodeEditor::connect(VisualNode* source, size_t sourceOutput, VisualNode* de
 		.sourceOutput = sourceOutput
 	};
 
-	if(m_graph->connect(source->node(), sourceOutput, destination->node(), destinationInput)) {
+	if (m_graph->connect(source->node(), sourceOutput, destination->node(), destinationInput)) {
 		m_connections.push_back(conn);
 		m_graph->solve();
 	}
@@ -682,4 +699,32 @@ void NodeEditor::rebuildDrawOrder() {
 		m_drawOrders.push_back(node->id());
 	}
 	if (m_selectedNode) m_drawOrders.push_back(m_selectedNode);
+}
+
+void NodeEditor::remove(size_t id) {
+	auto node = get(id);
+	if (node == nullptr) return;
+
+	m_graph->remove(node->node()->id());
+
+	std::vector<VisualConnection> connToRemove;
+	for (const auto& conn : m_connections) {
+		if (conn.destination == node || conn.source == node) {
+			connToRemove.push_back(conn);
+		}
+	}
+
+	for (const auto& conn : connToRemove) {
+		removeConnection(conn.source, conn.sourceOutput, conn.destination, conn.destinationInput);
+	}
+
+	auto pos = std::find_if(m_nodes.begin(), m_nodes.end(), [id](const std::unique_ptr<VisualNode>& nd) {
+		return nd->id() == id;
+	});
+
+	if (pos != m_nodes.end()) {
+		m_nodes.erase(pos);
+	}
+
+	rebuildDrawOrder();
 }

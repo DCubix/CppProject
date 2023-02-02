@@ -12,13 +12,15 @@
 #include "NodeEditor.h"
 #include "Edit.h"
 #include "TextureView.h"
-#include "ColorWheel.h"
+#include "ValueEdit.h"
 
 #include "GraphicsNode.h"
 #include "TextureNodeRegistry.h"
 #include "TextureNodeGraph.hpp"
 
 #include "ShaderGen.h"
+
+#include "Icons.hpp"
 
 #include <format>
 #include <sstream>
@@ -29,6 +31,7 @@
 
 struct MenuItem {
 	std::string text;
+	size_t icon;
 	std::function<void()> action;
 };
 
@@ -73,14 +76,15 @@ public:
 
 		// menus
 		MenuItem menu[] = {
-			{ "Open", [=]() { menu_OpenGraph(); } },
-			{ "Save", [=]() { menu_SaveGraph(); } },
+			{ "Open", icoFolderOpen, [=]() { menu_OpenGraph(); } },
+			{ "Save", icoSave, [=]() { menu_SaveGraph(); } },
 		};
 
 		for (const auto& item : menu) {
 			Button* menuButton = new Button();
 			menuButton->text = item.text;
-			menuButton->bounds = topBar.cutLeft(80).toRect().inflate(-4);
+			menuButton->icon = item.icon;
+			menuButton->bounds = topBar.cutLeft(100).toRect().inflate(-4);
 			menuButton->onPress = item.action;
 			//gui->addControl(menuButton);
 			pnlMenu->addChild(menuButton);
@@ -95,7 +99,6 @@ public:
 		ned->onSelect = [=](VisualNode* node) {
 			if (singleNodeEditor) {
 				pnlSettings->removeChild(singleNodeEditor->id());
-				//gui->removeControl(singleNodeEditor->id());
 				singleNodeEditor = nullptr;
 			}
 
@@ -106,11 +109,12 @@ public:
 				singleNodeEditor->bounds.height = ned->bounds.height;
 			}
 
-			OutputNode* out = dynamic_cast<OutputNode*>(node->node());
-			if (out) {
-				if (!out->texture) return;
+				OutputNode* out = dynamic_cast<OutputNode*>(node->node());
+				if (out) {
+					if (!out->texture) return;
 
-				previewControl->setTexture(out->texture.get());
+					previewControl->setTexture(out->texture.get());
+				}
 			}
 		};
 
@@ -146,12 +150,6 @@ public:
 		//gui->addControl(previewControl);
 		pnlPreview->addChild(previewControl);
 		//
-
-
-		ColorWheel* cw = gui->create<ColorWheel>();
-		cw->bounds = { 250, 50, 200, 200 };
-		cw->setOrder(9999);
-
 
 		/*int wgCount[3], wgSize[3];
 		glGetIntegeri_v(GL_MAX_COMPUTE_WORK_GROUP_COUNT, 0, &wgCount[0]);

@@ -46,6 +46,12 @@
     <Filter Include="Header Files\tools">
       <UniqueIdentifier>{0affb3ea-463e-45bf-aa61-51c0d2520e06}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\gui\behaviors">
+      <UniqueIdentifier>{72e2d126-ea5b-4385-bc72-d5a4c9b21749}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\gui\behaviors">
+      <UniqueIdentifier>{380570e8-ccde-4b20-aa1d-54db39c04761}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -130,6 +136,12 @@
       <Filter>Source Files\gui\controls</Filter>
     </ClCompile>
     <ClCompile Include="ColorWheel.cpp">
+      <Filter>Source Files\gui\controls</Filter>
+    </ClCompile>
+    <ClCompile Include="LineEditor.cpp">
+      <Filter>Source Files\gui\behaviors</Filter>
+    </ClCompile>
+    <ClCompile Include="ValueEdit.cpp">
       <Filter>Source Files\gui\controls</Filter>
     </ClCompile>
   </ItemGroup>
@@ -250,6 +262,15 @@
     </ClInclude>
     <ClInclude Include="ColorWheel.h">
       <Filter>Header Files\gui\controls</Filter>
+    </ClInclude>
+    <ClInclude Include="ValueEdit.h">
+      <Filter>Header Files\gui\controls</Filter>
+    </ClInclude>
+    <ClInclude Include="LineEditor.h">
+      <Filter>Header Files\gui\behaviors</Filter>
+    </ClInclude>
+    <ClInclude Include="Icons.hpp">
+      <Filter>Header Files\gui</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

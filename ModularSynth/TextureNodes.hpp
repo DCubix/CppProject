@@ -25,6 +25,7 @@ public:
 	void onCreate() {
 		addOutput("Output", ValueType::vec4);
 		addParam("Color", ValueType::vec4);
+		setParam("Color", 0.0f, 0.0f, 0.0f, 1.0f);
 	}
 
 };
@@ -325,6 +326,8 @@ void out_uv(
 	uv *= xform;
 	uv += pos + vec2(0.5);
 
+	uv = op_rep(uv, repeatCount);
+
 	if (clampMode == 0.0) { // clamp to edge
 		uv = clamp(uv, 0.0, 1.0);
 	} else if (clampMode == 1.0) { // repeat
@@ -333,7 +336,7 @@ void out_uv(
 		mirrored(uv, uv);
 	}
 
-	duv = op_rep(uv, repeatCount);
+	duv = uv;
 }
 )";
 	}
@@ -357,6 +360,7 @@ void out_uv(
 		addInput("Deform", ValueType::vec2);
 
 		addParam("Repeat", ValueType::vec2);
+		setParam("Repeat", 1.0f, 1.0f);
 
 		addParam("Position", ValueType::vec2);
 		addParam("Scale", ValueType::vec2);
@@ -366,7 +370,7 @@ void out_uv(
 		addParam("Clamp", ValueType::scalar);
 
 		addParam("Deform Amount", ValueType::scalar);
-		setParam("Deform Amount", 1.0f);
+		setParam("Deform Amount", 0.0f);
 
 		addOutput("Output", ValueType::vec2);
 	}

@@ -23,7 +23,8 @@ struct WindowEvent {
 		keyboardKey,
 		textInput,
 		mouseMotion,
-		mouseButton
+		mouseButton,
+		moudeButtonDouble
 	} type;
 
 	int keyCode;

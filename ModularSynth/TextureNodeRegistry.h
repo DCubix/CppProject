@@ -2,6 +2,7 @@
 
 #define NOMINMAX
 #include <algorithm>
+#include <sstream>
 
 #include "TextureNodes.hpp"
 #include "NodeEditor.h"
@@ -13,6 +14,8 @@
 #include "RadioSelector.h"
 #include "Button.h"
 #include "Edit.h"
+#include "ColorWheel.h"
+#include "ValueEdit.h"
 
 #include "portable-file-dialogs.h"
 
@@ -41,6 +44,30 @@ struct NodeContructor {
 
 #define NodeCtor(T, c) [](NodeEditor* editor, const std::string& name, const std::string& code) { \
 	return editor->create<T, VisualNode>(name, code, c);\
+}
+
+static Control* gui_Labelled(
+	const std::string& label,
+	Control* control,
+	float height = 30.0f
+) {
+	Panel* row = new Panel();
+	row->drawBackground(false);
+	row->bounds = { 0, 0, 0, height };
+
+	Label* lbl = new Label();
+	lbl->text = label;
+	lbl->alignment = HorizontalAlignment::right;
+	row->addChild(lbl);
+
+	row->addChild(control);
+
+	RowLayout* rl = new RowLayout(2, 3);
+	rl->expansion[0] = 0.7f;
+	rl->expansion[1] = 1.3f;
+	row->setLayout(rl);
+
+	return row;
 }
 
 static Control* gui_ValueSlider(
@@ -81,7 +108,9 @@ static Control* gui_ValueSlider(
 template <size_t Size>
 static Control* gui_Vector(
 	const std::string& label,
-	RawValue& value
+	RawValue& value,
+	float step = 0.01f,
+	const std::function<void()>& onChange = nullptr
 ) {
 	const std::string labels[] = { "X:", "Y:", "Z:", "W:" };
 
@@ -98,22 +127,27 @@ static Control* gui_Vector(
 	Panel* vec = new Panel();
 	vec->drawBackground(false);
 	vec->setLayout(new RowLayout(Size, 0));
-	vec->bounds = { 0, 0, 0, 34 };
+	vec->bounds = { 0, 0, 0, 28 };
 	root->addChild(vec);
 
 	for (size_t i = 0; i < std::min(4ull, Size); i++) {
-		Edit* edt = new Edit();
-		edt->inputFilter = std::regex("[0-9\\.\\-]");
-		edt->text = std::to_string(value[i]);
+		ValueEdit* edt = new ValueEdit();
+		edt->value(value[i]);
 		edt->label = labels[i];
-		edt->onChange = [&value, edt, i](const std::string& text) {
-			value[i] = std::stof(text);
-			edt->text = std::to_string(value[i]);
+		edt->step = step;
+		edt->onValueChange = [&value, edt, i, onChange](float val) {
+			value[i] = val;
+			edt->value(val);
+			if (onChange) onChange();
 		};
 		vec->addChild(edt);
 	}
 
 	return root;
+}
+
+static uint8_t componentToByte(float val) {
+	return uint8_t(std::clamp(val, 0.0f, 1.0f) * 255.0f);
 }
 
 static Control* gui_ColorNode(VisualNode* node) {
@@ -122,19 +156,68 @@ static Control* gui_ColorNode(VisualNode* node) {
 	pnl->bounds = { 0, 0, 0, 0 };
 	pnl->setLayout(new ColumnLayout());
 
-	const std::string labels[] = { "Red", "Geen", "Blue", "Alpha" };
-
 	GraphicsNode* nd = (GraphicsNode*)node->node();
-	for (size_t i = 0; i < 4; i++) {
-		auto ctrl = gui_ValueSlider(
-			labels[i], nd->param("Color").value[i],
-			[=](float v) {
-				nd->setParam("Color", i, v);
-			}
+
+	auto colorWheel = new ColorWheel();
+
+	Edit* hexEdt = new Edit();
+	hexEdt->inputFilter = std::regex("[#0-9a-fA-F]");
+	hexEdt->text = std::format(
+		"#{:02x}{:02x}{:02x}",
+		componentToByte(nd->param("Color").value[0]),
+		componentToByte(nd->param("Color").value[1]),
+		componentToByte(nd->param("Color").value[2])
+	);
+	hexEdt->label = "HTML:";
+	hexEdt->onEditingComplete = [=](const std::string& text) {
+		std::string txt =
+			text.find('#') != std::string::npos ?
+			text.substr(1) : text;
+
+		int value = std::stoi(txt, nullptr, 16);
+		int r = (value & 0xFF0000) >> 16;
+		int g = (value & 0xFF00) >> 8;
+		int b = (value & 0xFF);
+
+		nd->setParam("Color", float(r) / 255.0f, float(g) / 255.0f, float(b) / 255.0f);
+		auto col = nd->paramValue("Color");
+		colorWheel->color({ col[0], col[1], col[2], 1.0f });
+	};
+
+	colorWheel->bounds.height = 150.0f;
+	colorWheel->color({
+		.r = nd->param("Color").value[0],
+		.g = nd->param("Color").value[1],
+		.b = nd->param("Color").value[2],
+		.a = 1.0f
+	});
+	colorWheel->onChange = [=](const Color& col) {
+		nd->setParam("Color", col.r, col.g, col.b);
+		hexEdt->text = std::format(
+			"#{:02x}{:02x}{:02x}",
+			componentToByte(col.r),
+			componentToByte(col.g),
+			componentToByte(col.b)
 		);
-		pnl->addChild(ctrl);
-		pnl->bounds.height += 30;
-	}
+	};
+
+	auto picker = gui_Labelled("Color", colorWheel, 160.0f);
+	pnl->addChild(picker);
+
+	pnl->bounds.height += picker->bounds.height;
+
+	auto alpha = gui_ValueSlider(
+		"Alpha", nd->param("Color").value[3],
+		[=](float v) {
+			nd->setParam("Color", 3ull, v);
+		}
+	);
+	pnl->addChild(alpha);
+	pnl->bounds.height += 30;
+
+	auto html = gui_Labelled("HTML", hexEdt);
+	pnl->addChild(html);
+	pnl->bounds.height += 30;
 
 	return pnl;
 }
@@ -317,13 +400,17 @@ static Control* gui_UVNode(VisualNode* node) {
 	);
 	pnl->addChild(defAmt);
 
-	auto rep = gui_Vector<2ull>("Repeat", nd->paramValue("Repeat"));
+	auto changed = [nd]() {
+		nd->markChanged();
+	};
+
+	auto rep = gui_Vector<2ull>("Repeat", nd->paramValue("Repeat"), 1.0f, changed);
 	pnl->addChild(rep);
 
-	auto pos = gui_Vector<2ull>("Position", nd->paramValue("Position"));
+	auto pos = gui_Vector<2ull>("Position", nd->paramValue("Position"), 0.01f, changed);
 	pnl->addChild(pos);
 
-	auto scl = gui_Vector<2ull>("Scale", nd->paramValue("Scale"));
+	auto scl = gui_Vector<2ull>("Scale", nd->paramValue("Scale"), 0.01f, changed);
 	pnl->addChild(scl);
 
 	auto rot = gui_ValueSlider(

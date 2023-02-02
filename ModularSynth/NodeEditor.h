@@ -125,6 +125,8 @@ public:
 		return nullptr;
 	}
 
+	void remove(size_t id);
+
 	void connect(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput);
 	void removeConnection(VisualNode* source, size_t sourceOutput, VisualNode* destination, size_t destinationInput);
 

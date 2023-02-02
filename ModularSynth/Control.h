@@ -89,6 +89,24 @@ struct Color {
 	float r, g, b, a;
 
 	float luminance() const { return 0.2126f * r + 0.7152f * g + 0.0722f * b; };
+
+	inline Color operator *(float b) {
+		return {
+			this->r * b,
+			this->g * b,
+			this->b * b,
+			this->a
+		};
+	}
+
+	inline Color operator +(Color b) {
+		return {
+			this->r + b.r,
+			this->g + b.g,
+			this->b + b.b,
+			(this->a + b.a) * 0.5f
+		};
+	}
 };
 
 class GUISystem;
@@ -109,6 +127,7 @@ public:
 
 	virtual void onMouseDown(int button, int x, int y) {}
 	virtual void onMouseUp(int button, int x, int y) {}
+	virtual void onMouseDoubleClick(int button, int x, int y) {}
 	virtual void onMouseMove(int x, int y, int dx, int dy) {}
 	virtual void onMouseDrag(int x, int y, int dx, int dy) {}
 	virtual void onMouseEnter() {}
@@ -162,6 +181,7 @@ protected:
 	void checkMouseInside();
 
 	bool handleMouseButton(WindowEvent ev);
+	bool handleMouseDoubleClick(WindowEvent ev);
 	bool handleMouseMotion(WindowEvent ev);
 	bool handleKeyEvent(WindowEvent ev);
 	bool handleTextInput(WindowEvent ev);

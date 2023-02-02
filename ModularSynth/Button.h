@@ -15,7 +15,8 @@ public:
 
 	std::function<void()> onPress{ nullptr };
 	std::string text{ "Label" };
-	float fontSize{ 16.0f };
+	size_t icon{ 0 };
+	float fontSize{ 15.0f };
 
 private:
 	Animator<float> m_hoverAnimator{};

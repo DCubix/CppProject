@@ -40,6 +40,7 @@ bool Control::onEvent(WindowEvent ev) {
 
 	switch (ev.type) {
 		case WindowEvent::mouseButton: return handleMouseButton(ev);
+		case WindowEvent::moudeButtonDouble: return handleMouseDoubleClick(ev);
 		case WindowEvent::mouseMotion: return handleMouseMotion(ev);
 		case WindowEvent::keyboardKey: return handleKeyEvent(ev);
 		case WindowEvent::textInput: return handleTextInput(ev);
@@ -150,10 +151,23 @@ bool Control::handleMouseButton(WindowEvent ev) {
 	return false;
 }
 
+bool Control::handleMouseDoubleClick(WindowEvent ev) {
+	Point screenPos = { ev.screenX, ev.screenY };
+	Point mpos = screenToLocalPoint(screenPos);
+	if (!localBounds().hasPoint(mpos)) return false;
+
+	// this prevents the event from getting fired if the child (this) goes out of parent bounds
+	if (m_parent && !m_parent->screenSpaceBounds().hasPoint(screenPos)) return false;
+
+	onMouseDoubleClick(ev.button, mpos.x, mpos.y);
+
+	return true;
+}
+
 bool Control::handleMouseMotion(WindowEvent ev) {
 	Point screenPos = { ev.screenX, ev.screenY };
 	Point mpos = screenToLocalPoint(screenPos);
-	if (!localBounds().hasPoint(mpos) && !m_dragging) {
+	if (!localBounds().hasPoint(mpos)) {
 		checkMouseInside();
 		return false;
 	}

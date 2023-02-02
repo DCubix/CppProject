@@ -181,6 +181,7 @@
     <ClCompile Include="GUISystem.cpp" />
     <ClCompile Include="Knob.cpp" />
     <ClCompile Include="Label.cpp" />
+    <ClCompile Include="LineEditor.cpp" />
     <ClCompile Include="nanovg\nanovg.c" />
     <ClCompile Include="NodeEditor.cpp" />
     <ClCompile Include="NodeGraph.cpp" />
@@ -191,6 +192,8 @@
     <ClCompile Include="ShaderGen.cpp" />
     <ClCompile Include="Slider.cpp" />
     <ClCompile Include="Texture.cpp" />
+    <ClInclude Include="Icons.hpp" />
+    <ClInclude Include="LineEditor.h" />
     <ClInclude Include="ColorWheel.h" />
     <ClInclude Include="Edit.h" />
     <ClInclude Include="olcUTIL_DataFile.h" />
@@ -199,6 +202,7 @@
     <ClInclude Include="TextureNodeGraph.hpp" />
     <ClCompile Include="TextureNodeRegistry.cpp" />
     <ClCompile Include="TextureView.cpp" />
+    <ClCompile Include="ValueEdit.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -234,6 +238,7 @@
     <ClInclude Include="TextureNodes.hpp" />
     <ClInclude Include="TextureNodeRegistry.h" />
     <ClInclude Include="TextureView.h" />
+    <ClInclude Include="ValueEdit.h" />
     <ClInclude Include="WebCam.hpp" />
     <ClInclude Include="Window.h" />
   </ItemGroup>

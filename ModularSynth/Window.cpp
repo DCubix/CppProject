@@ -45,6 +45,26 @@ static LRESULT CALLBACK win32WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM 
 			win->submitEvent(ev);
 		} break;
 
+		case WM_RBUTTONDBLCLK:
+		case WM_MBUTTONDBLCLK:
+		case WM_LBUTTONDBLCLK: {
+			int x = GET_X_LPARAM(lParam);
+			int y = GET_Y_LPARAM(lParam);
+			win->updateMouse(x, y);
+
+			WindowEvent ev{};
+			ev.screenX = x;
+			ev.screenY = y;
+			ev.type = WindowEvent::moudeButtonDouble;
+			ev.buttonState = WindowEvent::down;
+
+			if (msg == WM_LBUTTONDBLCLK) ev.button = 1;
+			else if (msg == WM_MBUTTONDBLCLK) ev.button = 2;
+			else if (msg == WM_RBUTTONDBLCLK) ev.button = 3;
+
+			win->submitEvent(ev);
+		} break;
+
 		case WM_RBUTTONDOWN:
 		case WM_MBUTTONDOWN:
 		case WM_LBUTTONDOWN: {
@@ -138,7 +158,7 @@ bool Window::create(const WindowParams& params) {
 	wc.hbrBackground = HBRUSH(COLOR_WINDOW);
 	wc.lpszClassName = params.className.c_str();
 	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC | CS_DBLCLKS;
 
 	if (!RegisterClassEx(&wc)) {
 		MessageBox(NULL, TEXT("Failed to initialize window."), TEXT("Error"), MB_OK);
