@@ -15,6 +15,7 @@
 #include "Button.h"
 #include "Edit.h"
 #include "ColorWheel.h"
+#include "ValueEdit.h"
 
 #include "portable-file-dialogs.h"
 
@@ -107,7 +108,8 @@ static Control* gui_ValueSlider(
 template <size_t Size>
 static Control* gui_Vector(
 	const std::string& label,
-	RawValue& value
+	RawValue& value,
+	const std::function<void()>& onChange = nullptr
 ) {
 	const std::string labels[] = { "X:", "Y:", "Z:", "W:" };
 
@@ -124,17 +126,18 @@ static Control* gui_Vector(
 	Panel* vec = new Panel();
 	vec->drawBackground(false);
 	vec->setLayout(new RowLayout(Size, 0));
-	vec->bounds = { 0, 0, 0, 34 };
+	vec->bounds = { 0, 0, 0, 28 };
 	root->addChild(vec);
 
 	for (size_t i = 0; i < std::min(4ull, Size); i++) {
-		Edit* edt = new Edit();
-		edt->inputFilter = std::regex("[0-9\\.\\-]");
-		edt->text = std::to_string(value[i]);
+		ValueEdit* edt = new ValueEdit();
+		edt->value = value[i];
 		edt->label = labels[i];
-		edt->onChange = [&value, edt, i](const std::string& text) {
-			value[i] = std::stof(text);
-			edt->text = std::to_string(value[i]);
+		edt->step = 0.01f;
+		edt->onValueChange = [&value, edt, i, onChange](float val) {
+			value[i] = val;
+			edt->value = val;
+			if (onChange) onChange();
 		};
 		vec->addChild(edt);
 	}
@@ -396,13 +399,17 @@ static Control* gui_UVNode(VisualNode* node) {
 	);
 	pnl->addChild(defAmt);
 
-	auto rep = gui_Vector<2ull>("Repeat", nd->paramValue("Repeat"));
+	auto changed = [nd]() {
+		nd->markChanged();
+	};
+
+	auto rep = gui_Vector<2ull>("Repeat", nd->paramValue("Repeat"), changed);
 	pnl->addChild(rep);
 
-	auto pos = gui_Vector<2ull>("Position", nd->paramValue("Position"));
+	auto pos = gui_Vector<2ull>("Position", nd->paramValue("Position"), changed);
 	pnl->addChild(pos);
 
-	auto scl = gui_Vector<2ull>("Scale", nd->paramValue("Scale"));
+	auto scl = gui_Vector<2ull>("Scale", nd->paramValue("Scale"), changed);
 	pnl->addChild(scl);
 
 	auto rot = gui_ValueSlider(

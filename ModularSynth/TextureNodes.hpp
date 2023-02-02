@@ -357,6 +357,7 @@ void out_uv(
 		addInput("Deform", ValueType::vec2);
 
 		addParam("Repeat", ValueType::vec2);
+		setParam("Repeat", 1.0f, 1.0f);
 
 		addParam("Position", ValueType::vec2);
 		addParam("Scale", ValueType::vec2);
@@ -366,7 +367,7 @@ void out_uv(
 		addParam("Clamp", ValueType::scalar);
 
 		addParam("Deform Amount", ValueType::scalar);
-		setParam("Deform Amount", 1.0f);
+		setParam("Deform Amount", 0.0f);
 
 		addOutput("Output", ValueType::vec2);
 	}

@@ -127,6 +127,7 @@ public:
 
 	virtual void onMouseDown(int button, int x, int y) {}
 	virtual void onMouseUp(int button, int x, int y) {}
+	virtual void onMouseDoubleClick(int button, int x, int y) {}
 	virtual void onMouseMove(int x, int y, int dx, int dy) {}
 	virtual void onMouseDrag(int x, int y, int dx, int dy) {}
 	virtual void onMouseEnter() {}
@@ -180,6 +181,7 @@ protected:
 	void checkMouseInside();
 
 	bool handleMouseButton(WindowEvent ev);
+	bool handleMouseDoubleClick(WindowEvent ev);
 	bool handleMouseMotion(WindowEvent ev);
 	bool handleKeyEvent(WindowEvent ev);
 	bool handleTextInput(WindowEvent ev);

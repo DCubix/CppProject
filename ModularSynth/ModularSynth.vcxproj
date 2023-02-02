@@ -201,6 +201,7 @@
     <ClInclude Include="TextureNodeGraph.hpp" />
     <ClCompile Include="TextureNodeRegistry.cpp" />
     <ClCompile Include="TextureView.cpp" />
+    <ClCompile Include="ValueEdit.cpp" />
     <ClCompile Include="Window.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>

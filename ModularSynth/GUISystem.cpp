@@ -32,6 +32,11 @@ void GUISystem::onEvent(WindowEvent ev) {
 	Control* controlToFocus = m_root->withFocusRequest();
 	if (controlToFocus) {
 		if (m_currentFocus) {
+			if (m_currentFocus == controlToFocus) {
+				controlToFocus->m_focusRequested = false;
+				return;
+			}
+
 			m_currentFocus->m_focused = false;
 			m_currentFocus->onBlur();
 		}

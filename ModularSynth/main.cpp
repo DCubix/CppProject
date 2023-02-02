@@ -12,7 +12,7 @@
 #include "NodeEditor.h"
 #include "Edit.h"
 #include "TextureView.h"
-#include "ColorWheel.h"
+#include "ValueEdit.h"
 
 #include "GraphicsNode.h"
 #include "TextureNodeRegistry.h"

@@ -141,6 +141,9 @@
     <ClCompile Include="LineEditor.cpp">
       <Filter>Source Files\gui\behaviors</Filter>
     </ClCompile>
+    <ClCompile Include="ValueEdit.cpp">
+      <Filter>Source Files\gui\controls</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window.h">

@@ -60,6 +60,10 @@ public:
 	}
 	void setParam(const std::string& name, size_t index, float v) { m_params[name].value[index] = v; m_changed = true; }
 
+	void markChanged() {
+		m_changed = true;
+	}
+
 	bool hasParam(const std::string& name) { return m_params.find(name) != m_params.end(); }
 
 	const std::map<std::string, NodeValue>& params() { return m_params; }
