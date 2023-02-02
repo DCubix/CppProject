@@ -74,10 +74,13 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgFontSize(ctx, 16.0f);
 		nvgTextAlign(ctx, NVG_ALIGN_MIDDLE);
 		nvgText(ctx, 16.0f, titleHeight / 2 + 1.5f, title.c_str(), nullptr);
+
+		dbounds.y += titleHeight;
+		dbounds.height -= titleHeight;
 	}
 
 	nvgSave(ctx);
-	nvgScissor(ctx, dbounds.x, dbounds.y, dbounds.width - rw, dbounds.height - rh);
+	nvgIntersectScissor(ctx, dbounds.x, dbounds.y, dbounds.width - rw, dbounds.height - rh);
 
 	if (onCustomPaint) {
 		nvgSave(ctx);
@@ -141,6 +144,15 @@ bool Panel::onEvent(WindowEvent ev) {
 		}
 	}
 
+	switch(ev.type) {
+		case WindowEvent::mouseMotion: 
+		case WindowEvent::mouseButton:
+		case WindowEvent::moudeButtonDouble:
+			ev.screenX += m_scrollBars[0]->page;
+			ev.screenY += m_scrollBars[1]->page;
+		break;
+	}
+
 	return Control::onEvent(ev);
 }
 
@@ -198,13 +210,6 @@ void ColumnLayout::performLayout(Control* control, Dimension parentSize, size_t 
 
 void RowLayout::beginLayout() {
 	m_xpos = 0;
-}
-
-Point Panel::screenToLocalPoint(Point p) {
-	auto res = Control::screenToLocalPoint(p);
-	p.x -= m_scrollBars[0]->page;
-	p.y -= m_scrollBars[1]->page;
-	return res;
 }
 
 void RowLayout::performLayout(Control* control, Dimension parentSize, size_t index) {

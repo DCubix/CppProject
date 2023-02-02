@@ -39,6 +39,7 @@ public:
 	std::function<void(NVGcontext*)> onCustomPaint;
 
 protected:
+
 	Point screenToLocalPoint(Point p) final;
 
 private:
