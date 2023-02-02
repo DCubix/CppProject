@@ -109,6 +109,7 @@ template <size_t Size>
 static Control* gui_Vector(
 	const std::string& label,
 	RawValue& value,
+	float step = 0.01f,
 	const std::function<void()>& onChange = nullptr
 ) {
 	const std::string labels[] = { "X:", "Y:", "Z:", "W:" };
@@ -131,12 +132,12 @@ static Control* gui_Vector(
 
 	for (size_t i = 0; i < std::min(4ull, Size); i++) {
 		ValueEdit* edt = new ValueEdit();
-		edt->value = value[i];
+		edt->value(value[i]);
 		edt->label = labels[i];
-		edt->step = 0.01f;
+		edt->step = step;
 		edt->onValueChange = [&value, edt, i, onChange](float val) {
 			value[i] = val;
-			edt->value = val;
+			edt->value(val);
 			if (onChange) onChange();
 		};
 		vec->addChild(edt);
@@ -403,13 +404,13 @@ static Control* gui_UVNode(VisualNode* node) {
 		nd->markChanged();
 	};
 
-	auto rep = gui_Vector<2ull>("Repeat", nd->paramValue("Repeat"), changed);
+	auto rep = gui_Vector<2ull>("Repeat", nd->paramValue("Repeat"), 1.0f, changed);
 	pnl->addChild(rep);
 
-	auto pos = gui_Vector<2ull>("Position", nd->paramValue("Position"), changed);
+	auto pos = gui_Vector<2ull>("Position", nd->paramValue("Position"), 0.01f, changed);
 	pnl->addChild(pos);
 
-	auto scl = gui_Vector<2ull>("Scale", nd->paramValue("Scale"), changed);
+	auto scl = gui_Vector<2ull>("Scale", nd->paramValue("Scale"), 0.01f, changed);
 	pnl->addChild(scl);
 
 	auto rot = gui_ValueSlider(

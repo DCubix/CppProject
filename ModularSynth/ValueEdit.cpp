@@ -37,10 +37,9 @@ void ValueEdit::onDraw(NVGcontext* ctx, float deltaTime) {
 	
 	nvgFontSize(ctx, 16.0f);
 
-
 	nvgScissor(ctx, 12.0f, 2.0f, b.width - 24.0f, b.height - 4.0f);
 
-	std::string valueText = std::vformat(valueFormat, std::make_format_args(value));
+	std::string valueText = std::vformat(valueFormat, std::make_format_args(m_value));
 
 	m_labelOffset = textPad;
 	if (!m_editingText) {
@@ -124,7 +123,6 @@ void ValueEdit::onMouseDown(int button, int x, int y) {
 	if (button != 1) return;
 
 	m_dragging = true;
-	calculateValue(0);
 }
 
 void ValueEdit::onMouseUp(int button, int x, int y) {
@@ -149,28 +147,31 @@ void ValueEdit::onBlur() {
 	m_dragging = false;
 }
 
-void ValueEdit::calculateValue(int dx) {
-	float sign = dx < 0 ? -1.0f : 1.0f;
-	value += ::pow(2.0f, float(dx) * sensitivity) * step * sign;
-
-	float newStep = ::roundf(value / step);
+float ValueEdit::snap(float v) {
+	float newStep = ::roundf(v / step);
 	float newValue = newStep * step;
+	return newValue;
+}
 
-	if (newValue != value) {
-		value = newValue;
-		if (onValueChange) onValueChange(value);
+void ValueEdit::calculateValue(int dx) {
+	m_actualValue += float(dx) * step * sensitivity;
+
+	float newValue = snap(m_actualValue);
+
+	if (newValue != m_value) {
+		value(newValue);
 	}
 }
 
 void ValueEdit::textToValue() {
 	m_editingText = false;
-	value = std::stof(text);
+	value(std::stof(text));
 	if (onEditingComplete) onEditingComplete(text);
 }
 
 void ValueEdit::onMouseDoubleClick(int button, int x, int y) {
 	if (button == 1 && !m_editingText) {
 		m_editingText = true;
-		text = std::to_string(value);
+		text = std::to_string(m_value);
 	}
 }

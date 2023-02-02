@@ -19,14 +19,24 @@ public:
 	void onBlur() override;
 
 	std::string label{ "" }, valueFormat{ "{:.2f}" };
-	float value{ 0.0f }, step{ 0.1f };
+	float step{ 0.1f };
+
+	float value() const { return m_value; }
+	void value(float v) {
+		if (m_value != snap(v)) {
+			m_value = snap(v);
+			if (onValueChange) onValueChange(m_value);
+		}
+		m_actualValue = v;
+	}
 
 	std::function<void(float)> onValueChange{ nullptr };
 
 private:
-	float m_labelOffset{ 0.0f };
+	float m_labelOffset{ 0.0f }, m_actualValue{ 0.0f }, m_value{ 0.0f };
 	bool m_editingText{ false }, m_dragging{ false };
 
+	float snap(float v);
 	void calculateValue(int mx);
 	void textToValue();
 };

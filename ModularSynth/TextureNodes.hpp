@@ -325,6 +325,8 @@ void out_uv(
 	uv *= xform;
 	uv += pos + vec2(0.5);
 
+	uv = op_rep(uv, repeatCount);
+
 	if (clampMode == 0.0) { // clamp to edge
 		uv = clamp(uv, 0.0, 1.0);
 	} else if (clampMode == 1.0) { // repeat
@@ -333,7 +335,7 @@ void out_uv(
 		mirrored(uv, uv);
 	}
 
-	duv = op_rep(uv, repeatCount);
+	duv = uv;
 }
 )";
 	}
