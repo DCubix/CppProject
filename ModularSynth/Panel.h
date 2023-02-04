@@ -13,8 +13,12 @@ public:
 	virtual void performLayout(Control* control, Dimension parentSize, size_t index) = 0;
 };
 
+class ScrollBar;
 class Panel : public Control {
 public:
+
+	Panel();
+
 	void onDraw(NVGcontext* ctx, float deltaTime) override;
 	void onPostDraw(NVGcontext* ctx, float deltaTime) override;
 
@@ -22,6 +26,8 @@ public:
 	void onMouseUp(int button, int x, int y) override;
 	void onMouseMove(int x, int y, int dx, int dy) override;
 	void onMouseLeave() override;
+
+	bool onEvent(WindowEvent ev) override;
 
 	void setLayout(Layout* layout);
 
@@ -32,6 +38,10 @@ public:
 
 	std::function<void(NVGcontext*)> onCustomPaint;
 
+protected:
+
+	Point screenToLocalPoint(Point p) final;
+
 private:
 	std::vector<std::pair<ControlID, size_t>> m_orders;
 
@@ -39,6 +49,9 @@ private:
 
 	bool m_drawBackground{ true }, m_draggable{ false };
 	bool m_dragging{ false };
+
+	std::array<std::unique_ptr<ScrollBar>, 2> m_scrollBars;
+
 };
 
 class ColumnLayout : public Layout {

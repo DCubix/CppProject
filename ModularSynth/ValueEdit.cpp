@@ -37,7 +37,7 @@ void ValueEdit::onDraw(NVGcontext* ctx, float deltaTime) {
 	
 	nvgFontSize(ctx, 16.0f);
 
-	nvgScissor(ctx, 12.0f, 2.0f, b.width - 24.0f, b.height - 4.0f);
+	nvgIntersectScissor(ctx, 12.0f, 2.0f, b.width - 24.0f, b.height - 4.0f);
 
 	std::string valueText = std::vformat(valueFormat, std::make_format_args(m_value));
 
@@ -78,12 +78,13 @@ void ValueEdit::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgTextAlign(ctx, NVG_ALIGN_LEFT | NVG_ALIGN_MIDDLE);
 		nvgText(ctx, m_labelOffset, b.height / 2 + 1.5f, valueText.c_str(), nullptr);
 
-		nvgResetScissor(ctx);
 
 		// arrows
 		const float radius = (b.height / 2) - 2;
 		drawArrow(ctx, radius, b.height / 2, 4.0f, -1.0f, 0.5f, 0.5f, 0.5f, 0.7f);
 		drawArrow(ctx, b.width - radius, b.height / 2, 4.0f, 1.0f, 0.5f, 0.5f, 0.5f, 0.7f);
+
+		nvgResetScissor(ctx);
 	}
 
 }

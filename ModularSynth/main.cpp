@@ -102,18 +102,18 @@ public:
 				singleNodeEditor = nullptr;
 			}
 
-			if (node) {
-				singleNodeEditor = createTextureNodeEditorGui(node);
-				if (singleNodeEditor) {
-					pnlSettings->addChild(singleNodeEditor);
-				}
+			singleNodeEditor = createTextureNodeEditorGui(node);
+			if (singleNodeEditor) {
+				pnlSettings->addChild(singleNodeEditor);
+				singleNodeEditor->bounds.width = ned->bounds.width;
+				singleNodeEditor->bounds.height = ned->bounds.height;
+			}
 
-				OutputNode* out = dynamic_cast<OutputNode*>(node->node());
-				if (out) {
-					if (!out->texture) return;
+			OutputNode* out = dynamic_cast<OutputNode*>(node->node());
+			if (out) {
+				if (!out->texture) return;
 
-					previewControl->setTexture(out->texture.get());
-				}
+				previewControl->setTexture(out->texture.get());
 			}
 		};
 

@@ -3,7 +3,7 @@
 void Label::onDraw(NVGcontext* ctx, float deltaTime) {
 	Rect b = bounds;
 
-	nvgScissor(ctx, 0, 0, b.width, b.height);
+	nvgIntersectScissor(ctx, 0, 0, b.width, b.height);
 
 	nvgFontSize(ctx, fontSize);
 	nvgFillColor(ctx, nvgRGB(250, 250, 250));

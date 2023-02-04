@@ -10,6 +10,10 @@
 *.userosscache
 *.sln.docstates
 
+#Backup files WinMerge generates
+*.cpp.bak
+*.h.back
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

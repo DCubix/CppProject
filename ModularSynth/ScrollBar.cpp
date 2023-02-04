@@ -57,8 +57,8 @@ void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
 	Rect sliderRect = {};
 
 	switch(orientation) {
-		case SBOrientation::horizontal: sliderRect = { 0, b.height / 2 - (size / 2), b.width, size }; break;
-		case SBOrientation::vertical: sliderRect = { b.width / 2 - (size / 2), 0, size, b.height }; break;
+		case SBOrientation::horizontal: sliderRect = { 0, b.height / 2 - int(size / 2), b.width, (size) }; break;
+		case SBOrientation::vertical: sliderRect = { b.width / 2 - (size / 2), 0, (size), b.height }; break;
 	}
 
 	const float radius = (size / 2) - 2;
@@ -188,11 +188,9 @@ void ScrollBar::onDraw(NVGcontext* ctx, float deltaTime) {
 
 	nvgBeginPath(ctx);
 	
-	float t = (page - pageMin) / (pageMax - pageMin - pageSize);
-	t = (t * t * (3.0f - 2.0f * t));
-
-	float lowRadius = (1.0f - t) * radius;
-	float highRadius = t * radius;
+	float wholeSize = pageMax - pageMin;
+	float highRadius =  std::min(size/2, page);;
+	float lowRadius = std::min(wholeSize-page-pageSize, radius);
 
 	auto handle = handleRect();
 	if(vertical)
@@ -223,6 +221,7 @@ void ScrollBar::onPostDraw(NVGcontext* ctx, float deltaTime) {
 }
 
 void ScrollBar::onMouseDown(int button, int x, int y) {
+	m_focusRequested = true;
 	m_mousePos = { float(x), float(y) };
 	if (button == 1) {
 
@@ -282,6 +281,7 @@ void ScrollBar::onMouseDown(int button, int x, int y) {
 }
 
 void ScrollBar::onMouseUp(int button, int x, int y) {
+	m_focusRequested = false;
 	m_dragging = false;
 	m_increasing = false;
 	m_decreasing = false;

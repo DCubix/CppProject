@@ -1,14 +1,49 @@
 #include "Panel.h"
-
+#include "ScrollBar.h"
 #include "GUISystem.h"
 
 #include <iostream>
 
 constexpr float titleHeight = 38.0f;
 
+Panel::Panel() {
+
+	for(size_t i = 0; i < m_scrollBars.size(); i++) {
+		m_scrollBars[i] = std::make_unique<ScrollBar>();
+		m_scrollBars[i]->orientation = SBOrientation(i);
+	}
+
+	m_scrollBars[1]->pageStep = 1.0f;
+	m_scrollBars[1]->pageStep = 1.0f;
+
+	m_scrollBars[0]->pageMax = 0.f;
+	m_scrollBars[0]->pageMax = 0.f;
+
+}
+
 void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 	// ordering
 	m_orders.clear();
+	for(auto& sb: m_scrollBars)
+		sb->parent(this);
+
+
+	m_scrollBars[0]->bounds.x = 0.f;
+	m_scrollBars[0]->bounds.y = bounds.height - 20.f;
+	m_scrollBars[0]->bounds.width = bounds.width - (m_scrollBars[1]->shouldShow() ? m_scrollBars[1]->bounds.width : 0.0f);
+	m_scrollBars[0]->bounds.height = 20.f;
+	
+	m_scrollBars[1]->bounds.x = bounds.width - 20.f;
+	m_scrollBars[1]->bounds.y = (title.empty() ? 0 : titleHeight);
+	m_scrollBars[1]->bounds.width  = 20.f;
+	m_scrollBars[1]->bounds.height = bounds.height - (m_scrollBars[0]->shouldShow() ? m_scrollBars[0]->bounds.height : 0.0f) - (title.empty() ? 0 : titleHeight);
+
+	int rw = (m_scrollBars[1]->shouldShow() ? m_scrollBars[1]->bounds.width : 0.0f);
+	int rh = (m_scrollBars[0]->shouldShow() ? m_scrollBars[0]->bounds.height : 0.0f);
+
+	m_scrollBars[0]->pageSize = bounds.width - rw;
+	m_scrollBars[1]->pageSize = bounds.height - rh;
+
 	for (auto&& [cid, ctrl] : m_children) {
 		m_orders.push_back({ cid, ctrl->m_order + m_order * 1000 });
 	}
@@ -39,9 +74,13 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgFontSize(ctx, 16.0f);
 		nvgTextAlign(ctx, NVG_ALIGN_MIDDLE);
 		nvgText(ctx, 16.0f, titleHeight / 2 + 1.5f, title.c_str(), nullptr);
+
+		dbounds.y += titleHeight;
+		dbounds.height -= titleHeight;
 	}
 
-	nvgScissor(ctx, dbounds.x, dbounds.y, dbounds.width, dbounds.height);
+	nvgSave(ctx);
+	nvgIntersectScissor(ctx, dbounds.x, dbounds.y, dbounds.width - rw, dbounds.height - rh);
 
 	if (onCustomPaint) {
 		nvgSave(ctx);
@@ -50,7 +89,6 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 	}
 
 	int index = 0;
-
 	if (m_layout) m_layout->beginLayout();
 	for (auto&& [ childId, order ] : m_orders) {
 		auto&& child = m_children[childId];
@@ -63,13 +101,17 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 			);
 		}
 		
+		m_scrollBars[0]->pageMax = std::max(m_scrollBars[0]->pageMax, float(child->bounds.x + child->bounds.width));
+		m_scrollBars[1]->pageMax = std::max(m_scrollBars[1]->pageMax, float(child->bounds.y + child->bounds.height));
+
 		if (m_drawBackground && m_layout) {
 			child->bounds.y += titleHeight;
 		}
 
 		nvgSave(ctx);
+
 		Rect cbounds = child->bounds;
-		nvgTranslate(ctx, cbounds.x, cbounds.y);
+		nvgTranslate(ctx, cbounds.x - m_scrollBars[0]->page, cbounds.y - m_scrollBars[1]->page);
 
 		child->onDraw(ctx, deltaTime);
 		nvgRestore(ctx);
@@ -81,6 +123,37 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		index++;
 	}
 	if (m_layout) m_layout->endLayout();
+	nvgRestore(ctx);
+	for(auto& sb: m_scrollBars) {
+		nvgSave(ctx);
+		nvgTranslate(ctx, sb->bounds.x, sb->bounds.y);
+		if(sb->shouldShow()) 
+			sb->onDraw(ctx, deltaTime);
+		nvgRestore(ctx);
+	}
+
+
+
+}
+
+bool Panel::onEvent(WindowEvent ev) {	
+	for(auto& sb: m_scrollBars) {
+		if(sb->shouldShow()) {
+			bool consumed = sb->onEvent(ev);
+			if(consumed) return true;
+		}
+	}
+
+	switch(ev.type) {
+		case WindowEvent::mouseMotion: 
+		case WindowEvent::mouseButton:
+		case WindowEvent::moudeButtonDouble:
+			ev.screenX += m_scrollBars[0]->page;
+			ev.screenY += m_scrollBars[1]->page;
+		break;
+	}
+
+	return Control::onEvent(ev);
 }
 
 void Panel::onPostDraw(NVGcontext* ctx, float deltaTime) {
@@ -91,11 +164,12 @@ void Panel::onPostDraw(NVGcontext* ctx, float deltaTime) {
 
 		// make local coordinates
 		Rect bounds = child->bounds;
-		nvgTranslate(ctx, bounds.x, bounds.y);
+		nvgTranslate(ctx, bounds.x - m_scrollBars[0]->page, bounds.y - m_scrollBars[1]->page);
 
 		child->onPostDraw(ctx, deltaTime);
 		nvgRestore(ctx);
 	}
+
 }
 
 void Panel::setLayout(Layout* layout) {

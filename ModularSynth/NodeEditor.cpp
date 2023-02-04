@@ -89,7 +89,7 @@ void NodeEditor::onDraw(NVGcontext* ctx, float deltaTime) {
 		VisualNode* node = get(m_selectedNode);
 		if (node) {
 
-			if(m_selectedOutput == SIZE_MAX && m_selectedInput == SIZE_MAX)
+			if(m_selectedOutput < 0 && m_selectedInput < 0)
 				return;
 
 			Rect socketRect = {};
@@ -246,13 +246,15 @@ void NodeEditor::onMouseDown(int button, int x, int y) {
 					{
 						if (node->node()->input(i).connected) 
 						{
+
 							auto connections = getConnectionsTo(node);
 							VisualConnection connection = { nullptr, nullptr, -1, -1 };
-							for (auto c : connections) {
-								if(c.destinationInput == i) {
+							for (const auto& c : connections) 
+							{
+								if(c.destinationInput == i && c.destination == node) 			
 									connection = c;
-								}
 							}
+
 							if (connection.source && connection.destination) 
 							{
 								removeConnection(connection.source, connection.sourceOutput, connection.destination, connection.destinationInput);
