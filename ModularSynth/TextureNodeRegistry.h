@@ -62,7 +62,7 @@ static Control* gui_Labelled(
 
 	row->addChild(control);
 
-	RowLayout* rl = new RowLayout(2, 3);
+	RowLayout* rl = new RowLayout(3);
 	rl->expansion[0] = 0.7f;
 	rl->expansion[1] = 1.3f;
 	row->setLayout(rl);
@@ -85,6 +85,7 @@ static Control* gui_ValueSlider(
 	Label* lbl = new Label();
 	lbl->text = label;
 	lbl->alignment = HorizontalAlignment::right;
+	lbl->bounds.width = 90.0f;
 	row->addChild(lbl);
 
 	Slider* sld = new Slider();
@@ -97,9 +98,9 @@ static Control* gui_ValueSlider(
 	};
 	row->addChild(sld);
 	
-	RowLayout* rl = new RowLayout(2, 3);
-	rl->expansion[0] = 0.7f;
-	rl->expansion[1] = 1.3f;
+	RowLayout* rl = new RowLayout(0);
+	rl->expansion[0] = 0.0f;
+	rl->expansion[1] = 1.0f;
 	row->setLayout(rl);
 
 	return row;
@@ -126,7 +127,7 @@ static Control* gui_Vector(
 
 	Panel* vec = new Panel();
 	vec->drawBackground(false);
-	vec->setLayout(new RowLayout(Size, 0));
+	vec->setLayout(new RowLayout(0));
 	vec->bounds = { 0, 0, 0, 28 };
 	root->addChild(vec);
 
@@ -376,7 +377,7 @@ static Control* gui_ImageNode(VisualNode* node) {
 static Control* gui_UVNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
-	pnl->bounds = { 0, 0, 0, 60 };
+	pnl->bounds = { 0, 0, 0, 200 };
 	pnl->setLayout(new ColumnLayout());
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();

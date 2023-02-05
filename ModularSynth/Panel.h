@@ -8,9 +8,7 @@
 
 class Layout {
 public:
-	virtual void beginLayout() {}
-	virtual void endLayout() {}
-	virtual void performLayout(Control* control, Dimension parentSize, size_t index) = 0;
+	virtual Dimension apply(const std::vector<Control*> targets, Dimension parentSize) = 0;
 };
 
 class ScrollBar;
@@ -27,7 +25,7 @@ public:
 	void onMouseMove(int x, int y, int dx, int dy) override;
 	void onMouseLeave() override;
 
-	bool onEvent(WindowEvent ev) override;
+	bool onEvent(WindowEvent ev, Point offset) override;
 
 	void setLayout(Layout* layout);
 
@@ -37,10 +35,6 @@ public:
 	std::string title{ "Panel" };
 
 	std::function<void(NVGcontext*)> onCustomPaint;
-
-protected:
-
-	Point screenToLocalPoint(Point p) final;
 
 private:
 	std::vector<std::pair<ControlID, size_t>> m_orders;
@@ -58,44 +52,19 @@ class ColumnLayout : public Layout {
 public:
 	ColumnLayout(int padding = 6, int gap = 6) : padding(padding), gap(gap) {}
 
-	void beginLayout() override;
-	void performLayout(Control* control, Dimension parentSize, size_t index);
+	Dimension apply(const std::vector<Control*> targets, Dimension parentSize);
 
 	int padding{ 6 }, gap{ 6 };
-private:
-	int m_ypos{ 0 };
+
 };
 
 class RowLayout : public Layout {
 public:
-	RowLayout(int columns = 2, int padding = 6, int gap = 6) : columns(columns), padding(padding), gap(gap) {}
+	RowLayout(int padding = 6, int gap = 6) : padding(padding), gap(gap) {}
 
-	void beginLayout() override;
-	void performLayout(Control* control, Dimension parentSize, size_t index);
+	Dimension apply(const std::vector<Control*> targets, Dimension parentSize);
 
-	int padding{ 6 }, columns{ 2 }, gap{ 6 };
+	int padding{ 6 }, gap{ 6 };
 	std::map<size_t, float> expansion;
-private:
-	int m_xpos{ 0 };
-};
 
-class ColumnFlowLayout : public Layout {
-public:
-	ColumnFlowLayout(
-		int columns = 2,
-		int padding = 6,
-		int gap = 6,
-		int controlHeight = 24
-	) : controlHeight(controlHeight),
-		columns(columns),
-		padding(padding),
-		gap(gap)
-	{}
-
-	void beginLayout() override;
-	void performLayout(Control* control, Dimension parentSize, size_t index);
-
-	int padding{ 6 }, columns{ 2 }, gap{ 6 }, controlHeight{ 24 };
-private:
-	int m_xpos{ 0 }, m_ypos{ 0 };
 };

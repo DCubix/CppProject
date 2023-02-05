@@ -13,7 +13,7 @@ void Control::onDraw(NVGcontext* ctx, float deltaTime) {
 	nvgStroke(ctx);*/
 }
 
-bool Control::onEvent(WindowEvent ev) {
+bool Control::onEvent(WindowEvent ev, Point offset) {
 	std::vector<std::pair<ControlID, size_t>> orders;
 	for (auto&& [cid, ctrl] : m_children) {
 		orders.push_back({ cid, ctrl->m_order + m_order * 1000 });
@@ -30,7 +30,7 @@ bool Control::onEvent(WindowEvent ev) {
 	bool consumed = false;
 	for (const auto& [childId, _] : orders) {
 		auto&& child = m_children[childId];
-		consumed = child->onEvent(ev);
+		consumed = child->onEvent(ev, offset);
 		if (consumed) {
 			//std::cout << child->id() << " consumed the event.\n";
 			break;
@@ -39,14 +39,24 @@ bool Control::onEvent(WindowEvent ev) {
 	if (consumed) return true;
 
 	switch (ev.type) {
-		case WindowEvent::mouseButton: return handleMouseButton(ev);
-		case WindowEvent::moudeButtonDouble: return handleMouseDoubleClick(ev);
-		case WindowEvent::mouseMotion: return handleMouseMotion(ev);
+		case WindowEvent::mouseButton: return handleMouseButton(ev, offset);
+		case WindowEvent::moudeButtonDouble: return handleMouseDoubleClick(ev, offset);
+		case WindowEvent::mouseMotion: return handleMouseMotion(ev, offset);
 		case WindowEvent::keyboardKey: return handleKeyEvent(ev);
 		case WindowEvent::textInput: return handleTextInput(ev);
 	}
 
 	return false;
+}
+
+Rect Control::parentBounds(Point off) {
+	if (!m_parent) {
+		return { -9999, -9999, 9999, 9999 };
+	}
+	Rect pBounds = m_parent->screenSpaceBounds();
+	pBounds.x += off.x;
+	pBounds.y += off.y;
+	return pBounds;
 }
 
 Rect Control::screenSpaceBounds() {
@@ -129,13 +139,13 @@ Control* Control::child(ControlID id) {
 	return pos->second.get();
 }
 
-bool Control::handleMouseButton(WindowEvent ev) {
-	Point screenPos = { ev.screenX, ev.screenY };
+bool Control::handleMouseButton(WindowEvent ev, Point offset) {
+	Point screenPos = { ev.screenX + offset.x, ev.screenY + offset.y };
 	Point mpos = screenToLocalPoint(screenPos);
 	if (!localBounds().hasPoint(mpos)) return false;
 
 	// this prevents the event from getting fired if the child (this) goes out of parent bounds
-	if (m_parent && !m_parent->screenSpaceBounds().hasPoint(screenPos)) return false;
+	if (!parentBounds(offset).hasPoint(screenPos)) return false;
 
 	if (ev.buttonState == WindowEvent::down) {
 		requestFocus();
@@ -151,28 +161,28 @@ bool Control::handleMouseButton(WindowEvent ev) {
 	return false;
 }
 
-bool Control::handleMouseDoubleClick(WindowEvent ev) {
-	Point screenPos = { ev.screenX, ev.screenY };
+bool Control::handleMouseDoubleClick(WindowEvent ev, Point offset) {
+	Point screenPos = { ev.screenX + offset.x, ev.screenY + offset.y };
 	Point mpos = screenToLocalPoint(screenPos);
 	if (!localBounds().hasPoint(mpos)) return false;
 
 	// this prevents the event from getting fired if the child (this) goes out of parent bounds
-	if (m_parent && !m_parent->screenSpaceBounds().hasPoint(screenPos)) return false;
+	if (!parentBounds(offset).hasPoint(screenPos)) return false;
 
 	onMouseDoubleClick(ev.button, mpos.x, mpos.y);
 
 	return true;
 }
 
-bool Control::handleMouseMotion(WindowEvent ev) {
-	Point screenPos = { ev.screenX, ev.screenY };
+bool Control::handleMouseMotion(WindowEvent ev, Point offset) {
+	Point screenPos = { ev.screenX + offset.x, ev.screenY + offset.y };
 	Point mpos = screenToLocalPoint(screenPos);
 	if (!localBounds().hasPoint(mpos)) {
 		checkMouseInside();
 		return false;
 	}
 
-	if (m_parent && !m_parent->screenSpaceBounds().hasPoint(screenPos)) {
+	if (!parentBounds(offset).hasPoint(screenPos)) {
 		checkMouseInside();
 		return false;
 	}

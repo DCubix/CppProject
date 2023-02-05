@@ -88,22 +88,20 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgRestore(ctx);
 	}
 
+	std::vector<Control*> children;
+	for (auto&& [childId, order] : m_orders) {
+		children.push_back(m_children[childId].get());
+	}
+
+	if (m_layout) {
+		Dimension size = m_layout->apply(children, { int(b.width) - rw, int(b.height - (m_drawBackground ? titleHeight : 0)) - rh });
+
+		m_scrollBars[0]->pageMax = size.width;
+		m_scrollBars[1]->pageMax = size.height;
+	}
+
 	int index = 0;
-	if (m_layout) m_layout->beginLayout();
-	for (auto&& [ childId, order ] : m_orders) {
-		auto&& child = m_children[childId];
-
-		if (m_layout) {
-			m_layout->performLayout(
-				child.get(),
-				{ int(b.width), int(b.height - (m_drawBackground ? titleHeight : 0)) },
-				index
-			);
-		}
-		
-		m_scrollBars[0]->pageMax = std::max(m_scrollBars[0]->pageMax, float(child->bounds.x + child->bounds.width));
-		m_scrollBars[1]->pageMax = std::max(m_scrollBars[1]->pageMax, float(child->bounds.y + child->bounds.height));
-
+	for (auto&& child : children) {
 		if (m_drawBackground && m_layout) {
 			child->bounds.y += titleHeight;
 		}
@@ -122,7 +120,7 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 
 		index++;
 	}
-	if (m_layout) m_layout->endLayout();
+
 	nvgRestore(ctx);
 	for(auto& sb: m_scrollBars) {
 		nvgSave(ctx);
@@ -132,28 +130,22 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgRestore(ctx);
 	}
 
-
+	nvgStrokeColor(ctx, nvgRGB(0, 255, 255));
+	nvgBeginPath(ctx);
+	nvgRect(ctx, 0, 0, b.width, b.height);
+	nvgStroke(ctx);
 
 }
 
-bool Panel::onEvent(WindowEvent ev) {	
+bool Panel::onEvent(WindowEvent ev, Point offset) {
 	for(auto& sb: m_scrollBars) {
 		if(sb->shouldShow()) {
-			bool consumed = sb->onEvent(ev);
+			bool consumed = sb->onEvent(ev, offset);
 			if(consumed) return true;
 		}
 	}
 
-	switch(ev.type) {
-		case WindowEvent::mouseMotion: 
-		case WindowEvent::mouseButton:
-		case WindowEvent::moudeButtonDouble:
-			ev.screenX += m_scrollBars[0]->page;
-			ev.screenY += m_scrollBars[1]->page;
-		break;
-	}
-
-	return Control::onEvent(ev);
+	return Control::onEvent(ev, { offset.x + m_scrollBars[0]->page, offset.y + m_scrollBars[1]->page });
 }
 
 void Panel::onPostDraw(NVGcontext* ctx, float deltaTime) {
@@ -197,59 +189,51 @@ void Panel::onMouseLeave() {
 	m_dragging = false;
 }
 
-void ColumnLayout::beginLayout() {
-	m_ypos = 0;
-}
+Dimension ColumnLayout::apply(const std::vector<Control*> targets, Dimension parentSize) {
+	float yPos = padding;
 
-void ColumnLayout::performLayout(Control* control, Dimension parentSize, size_t index) {
-	control->bounds.width = parentSize.width - padding * 2;
-	control->bounds.x = padding;
-	control->bounds.y = padding + m_ypos;
-	m_ypos += control->bounds.height + gap;
-}
+	Dimension size{ padding, padding };
 
-void RowLayout::beginLayout() {
-	m_xpos = 0;
-}
-
-void RowLayout::performLayout(Control* control, Dimension parentSize, size_t index) {
-	const int gapTotal = (columns - 1) * gap;
-	const int columnWidth = (parentSize.width - gapTotal - padding * 2) / columns;
-
-	float expand = 1.0f;
-	if (expansion.find(index) != expansion.end()) {
-		expand = expansion[index];
+	for (auto ctrl : targets) {
+		ctrl->bounds.x = padding;
+		ctrl->bounds.y = yPos;
+		ctrl->bounds.width = parentSize.width - padding * 2;
+		yPos += ctrl->bounds.height + gap;
 	}
 
-	control->bounds.height = parentSize.height - padding * 2;
-	control->bounds.width = int(float(columnWidth) * expand);
-	control->bounds.x = m_xpos + padding;
-	control->bounds.y = padding;
+	size.width = parentSize.width - padding;
+	size.height = (int(yPos) + padding) - gap;
 
-	m_xpos += control->bounds.width + gap;
+	return size;
 }
 
-void ColumnFlowLayout::beginLayout() {
-	m_xpos = 0;
-	m_ypos = 0;
-}
+Dimension RowLayout::apply(const std::vector<Control*> targets, Dimension parentSize) {
+	float xPos = padding;
 
-void ColumnFlowLayout::performLayout(Control* control, Dimension parentSize, size_t index) {
-	const int gapTotal = (columns - 1) * gap;
-	const int actualParentWidth = parentSize.width - gapTotal - padding * 2;
-	const int columnWidth = actualParentWidth / columns;
+	Dimension size{ padding, padding };
 
-	control->bounds.height = controlHeight;
-	control->bounds.width = columnWidth;
-	control->bounds.x = m_xpos + padding;
-	control->bounds.y = m_ypos + padding;
+	size_t index = 0;
+	float parentWidth = parentSize.width - padding * 2;
+	for (auto ctrl : targets) {
+		ctrl->bounds.x = xPos;
+		ctrl->bounds.y = padding;
 
-	int next = control->bounds.width + gap;
-	if (m_xpos + next >= actualParentWidth) {
-		m_xpos = 0;
-		m_ypos += controlHeight + gap;
+		auto exp = expansion.find(index);
+		if (exp != expansion.end() && exp->second > 0.0f) {
+			ctrl->bounds.width = parentWidth * exp->second;
+		}
+
+		ctrl->bounds.height = parentSize.height - padding * 2;
+		xPos += ctrl->bounds.width + gap;
+
+		parentWidth -= (ctrl->bounds.width + gap);
+		if (parentWidth <= 0.0f) parentWidth = 0.0f;
+
+		index++;
 	}
-	else {
-		m_xpos += next;
-	}
+
+	size.width = (int(xPos) + padding) - gap;
+	size.height = parentSize.height + padding;
+
+	return size;
 }

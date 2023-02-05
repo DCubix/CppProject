@@ -141,8 +141,9 @@ public:
 	virtual std::vector<Control*> onGetExtraControls() { return std::vector<Control*>(); }
 	virtual void clearExtraControls() {}
 
-	virtual bool onEvent(WindowEvent ev);
+	virtual bool onEvent(WindowEvent ev, Point offset = { 0, 0 });
 
+	Rect parentBounds(Point off = {0, 0});
 	Rect screenSpaceBounds();
 	Rect localBounds();
 
@@ -180,9 +181,10 @@ protected:
 	Point screenToLocalPoint(Point src);
 	void checkMouseInside();
 
-	bool handleMouseButton(WindowEvent ev);
-	bool handleMouseDoubleClick(WindowEvent ev);
-	bool handleMouseMotion(WindowEvent ev);
+	bool handleMouseButton(WindowEvent ev, Point offset);
+	bool handleMouseDoubleClick(WindowEvent ev, Point offset);
+	bool handleMouseMotion(WindowEvent ev, Point offset);
+
 	bool handleKeyEvent(WindowEvent ev);
 	bool handleTextInput(WindowEvent ev);
 

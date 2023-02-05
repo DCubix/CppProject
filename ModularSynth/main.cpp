@@ -67,7 +67,7 @@ public:
 
 		Panel* pnlControls = gui->create<Panel>();
 		pnlControls->title = "Controls";
-		pnlControls->setLayout(new ColumnFlowLayout());
+		pnlControls->setLayout(new ColumnLayout());
 		pnlControls->bounds = controlsArea.toRect().inflate(-4);
 
 		Panel* pnlMenu = gui->create<Panel>();
@@ -105,8 +105,8 @@ public:
 			singleNodeEditor = createTextureNodeEditorGui(node);
 			if (singleNodeEditor) {
 				pnlSettings->addChild(singleNodeEditor);
-				singleNodeEditor->bounds.width = ned->bounds.width;
-				singleNodeEditor->bounds.height = ned->bounds.height;
+				singleNodeEditor->bounds.width = pnlSettings->bounds.width;
+				singleNodeEditor->bounds.height = pnlSettings->bounds.height;
 			}
 
 			OutputNode* out = dynamic_cast<OutputNode*>(node->node());
@@ -132,7 +132,7 @@ public:
 				auto node = createNewTextureNode(ned, ctor.code);
 				nodeTypeStorage[node->node()->id()] = { ctor.code, node->id() };
 			};
-			btn->bounds = { 0, 0, 0, 24 };
+			btn->bounds = { 0, 0, 0, 25 };
 			pnlControls->addChild(btn);
 		}
 
