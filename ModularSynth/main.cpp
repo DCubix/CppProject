@@ -72,6 +72,7 @@ public:
 
 		Panel* pnlMenu = gui->create<Panel>();
 		pnlMenu->drawBackground(false);
+		pnlMenu->setLayout(new RowLayout());
 		pnlMenu->bounds = topBar.toRect().inflate(-4);
 
 		// menus
@@ -84,7 +85,7 @@ public:
 			Button* menuButton = new Button();
 			menuButton->text = item.text;
 			menuButton->icon = item.icon;
-			menuButton->bounds = topBar.cutLeft(100).toRect().inflate(-4);
+			menuButton->bounds = topBar.cutLeft(100).toRect();
 			menuButton->onPress = item.action;
 			//gui->addControl(menuButton);
 			pnlMenu->addChild(menuButton);

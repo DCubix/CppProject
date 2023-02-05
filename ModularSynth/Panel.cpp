@@ -130,10 +130,10 @@ void Panel::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgRestore(ctx);
 	}
 
-	nvgStrokeColor(ctx, nvgRGB(0, 255, 255));
+	/*nvgStrokeColor(ctx, nvgRGB(0, 255, 255));
 	nvgBeginPath(ctx);
 	nvgRect(ctx, 0, 0, b.width, b.height);
-	nvgStroke(ctx);
+	nvgStroke(ctx);*/
 
 }
 

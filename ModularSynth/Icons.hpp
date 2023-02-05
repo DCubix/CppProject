@@ -83,6 +83,9 @@ struct Icon {
 				nvgPathWinding(ctx, lastWinding);
 			}
 		}
+
+		nvgStrokeWidth(ctx, 0.0f);
+		nvgStrokeColor(ctx, nvgRGBAf(r, g, b, 0.0f));
 		nvgFillColor(ctx, nvgRGBAf(r, g, b, a));
 		nvgFill(ctx);
 

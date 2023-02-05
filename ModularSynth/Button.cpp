@@ -33,7 +33,7 @@ void Button::onDraw(NVGcontext* ctx, float deltaTime) {
 		nvgTextBounds(ctx, 0.0f, 0.0f, text.c_str(), nullptr, txtBounds);
 		float tw = (txtBounds[2] - txtBounds[0]);
 
-		ico.render(ctx, b.width / 2 - (tw / 2 + 3.0f), b.height / 2, clickFgValue, clickFgValue, clickFgValue);
+		ico.render(ctx, b.width / 2 - (tw / 2 + 3.0f), b.height / 2, clickFgValue, clickFgValue, clickFgValue, 1.0f, 25.0f);
 	}
 
 	nvgFillColor(ctx, nvgRGBf(clickFgValue, clickFgValue, clickFgValue));

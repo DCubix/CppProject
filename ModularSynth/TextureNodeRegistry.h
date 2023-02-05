@@ -58,13 +58,14 @@ static Control* gui_Labelled(
 	Label* lbl = new Label();
 	lbl->text = label;
 	lbl->alignment = HorizontalAlignment::right;
+	lbl->bounds.width = 90.0f;
 	row->addChild(lbl);
 
 	row->addChild(control);
 
-	RowLayout* rl = new RowLayout(3);
-	rl->expansion[0] = 0.7f;
-	rl->expansion[1] = 1.3f;
+	RowLayout* rl = new RowLayout(0);
+	rl->expansion[0] = 0.0f;
+	rl->expansion[1] = 1.0f;
 	row->setLayout(rl);
 
 	return row;
@@ -155,7 +156,7 @@ static Control* gui_ColorNode(VisualNode* node) {
 	Panel* pnl = new Panel();
 	pnl->drawBackground(false);
 	pnl->bounds = { 0, 0, 0, 0 };
-	pnl->setLayout(new ColumnLayout());
+	pnl->setLayout(new ColumnLayout(0));
 
 	GraphicsNode* nd = (GraphicsNode*)node->node();
 
